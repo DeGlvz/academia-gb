@@ -20,7 +20,7 @@ interface ProfileEditorProps {
     twitter: string;
     tiktok: string;
     website: string;
-    thermomixModel: "TM31" | "TM5" | "TM6" | "TM7";
+    thermomixModels: string[];
     foodPreferences: string[];
     registeredAt: string;
     avatar: string | null;
@@ -59,22 +59,21 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
   const [tiktok, setTikTok] = useState(profile.tiktok || "");
   const [website, setWebsite] = useState(profile.website || "");
   
-  // Modelos Thermomix - guardar como string (el primer modelo seleccionado o "none")
-  const [selectedModels, setSelectedModels] = useState<string[]>(() => {
-    if (profile.thermomixModel && profile.thermomixModel !== "none") {
-      return [profile.thermomixModel];
-    }
-    return [];
-  });
+  // Modelos Thermomix - AHORA ES UN ARRAY
+  const [selectedModels, setSelectedModels] = useState<string[]>(
+    profile.thermomixModels || []
+  );
   const [planToBuy, setPlanToBuy] = useState(false);
-  const [noThermomix, setNoThermomix] = useState(profile.thermomixModel === "none");
+  const [noThermomix, setNoThermomix] = useState(
+    !profile.thermomixModels || profile.thermomixModels.length === 0
+  );
   
   // Preferencias de alimentación
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>(
     profile.foodPreferences || []
   );
 
-  // Sincronizar con props cuando cambien (después de guardar)
+  // Sincronizar con props cuando cambien
   useEffect(() => {
     setName(profile.name);
     setEmail(profile.email);
@@ -84,13 +83,8 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
     setTwitter(profile.twitter || "");
     setTikTok(profile.tiktok || "");
     setWebsite(profile.website || "");
-    
-    if (profile.thermomixModel && profile.thermomixModel !== "none") {
-      setSelectedModels([profile.thermomixModel]);
-    } else {
-      setSelectedModels([]);
-    }
-    setNoThermomix(profile.thermomixModel === "none");
+    setSelectedModels(profile.thermomixModels || []);
+    setNoThermomix(!profile.thermomixModels || profile.thermomixModels.length === 0);
     setSelectedPreferences(profile.foodPreferences || []);
   }, [profile]);
 
@@ -109,14 +103,12 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
     
     setIsSaving(true);
     
-    // Determinar el modelo final (solo guardamos el primero seleccionado)
-    let finalModel: string;
+    // Determinar los modelos finales (array completo)
+    let finalModels: string[];
     if (noThermomix) {
-      finalModel = "none";
-    } else if (selectedModels.length > 0) {
-      finalModel = selectedModels[0];
+      finalModels = [];
     } else {
-      finalModel = "TM6";
+      finalModels = selectedModels;
     }
     
     try {
@@ -130,7 +122,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
           twitter: twitter,
           tiktok: tiktok,
           website: website,
-          thermomix_model: finalModel,
+          thermomix_models: finalModels,
           food_preferences: selectedPreferences,
           updated_at: new Date().toISOString(),
         })
@@ -150,7 +142,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
         });
       }
       
-      // Invalidar queries para refrescar los datos
+      // Invalidar queries para refrescar
       await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
       
       toast({
@@ -232,7 +224,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Modelos que tengo</Label>
+            <Label>Modelos que tengo (puedes seleccionar varios)</Label>
             <div className="flex flex-wrap gap-4">
               {THERMOMIX_MODELS.map((model) => (
                 <div key={model} className="flex items-center space-x-2">
@@ -254,9 +246,9 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
                 </div>
               ))}
             </div>
-            {selectedModels.length > 1 && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Nota: Solo se guardará el primer modelo seleccionado por ahora.
+            {selectedModels.length > 0 && (
+              <p className="text-xs text-green-600 mt-1">
+                ✅ Tienes {selectedModels.length} modelo(s) seleccionado(s): {selectedModels.join(", ")}
               </p>
             )}
           </div>
