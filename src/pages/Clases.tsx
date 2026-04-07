@@ -9,6 +9,9 @@ import type { ClassCategory, ThermomixModel } from "@/data/classes";
 import { fadeInUp, staggerContainer, staggerItem } from "@/lib/animations";
 import { Loader2 } from "lucide-react";
 
+// Slugs de blogs a excluir del catálogo
+const BLOG_SLUGS = ["basicos-de-tu-thermomix"];
+
 const Clases = () => {
   const [selectedCategory, setSelectedCategory] = useState<ClassCategory | "Todas">("Todas");
   const [selectedModel, setSelectedModel] = useState<ThermomixModel | "Todos">("Todos");
@@ -16,8 +19,18 @@ const Clases = () => {
 
   const filteredClasses = useMemo(() => {
     return classes.filter((c) => {
+      // 1. Excluir blogs
+      if (BLOG_SLUGS.includes(c.slug)) return false;
+      
+      // 2. Mostrar SOLO clases de paga (price > 0)
+      if (c.price <= 0) return false;
+      
+      // 3. Filtro por categoría
       const categoryMatch = selectedCategory === "Todas" || c.category === selectedCategory;
+      
+      // 4. Filtro por modelo
       const modelMatch = selectedModel === "Todos" || (c.compatible_models || []).includes(selectedModel);
+      
       return categoryMatch && modelMatch;
     });
   }, [classes, selectedCategory, selectedModel]);
@@ -29,10 +42,10 @@ const Clases = () => {
       <main className="flex-1 py-10 md:py-16">
         <div className="container px-4 space-y-8">
           <motion.div className="space-y-2" initial="hidden" animate="visible" variants={fadeInUp}>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Nuestras Clases</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground">Catálogo de Clases</h1>
             <p className="text-muted-foreground max-w-lg text-justify">
-              Explora todas las clases disponibles. 
-Las clases bloqueadas requieren compra para acceder al contenido completo.
+              Explora todas nuestras clases de paga. 
+              Cada clase incluye lecciones en video, material descargable y certificado de finalización.
             </p>
           </motion.div>
 
