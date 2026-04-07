@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Instagram, Facebook, Twitter, Tv, Globe } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ProfileEditorProps {
   profile: {
@@ -43,6 +44,7 @@ const THERMOMIX_MODELS = ["TM31", "TM5", "TM6", "TM7"];
 const ProfileEditor = ({ profile }: ProfileEditorProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
   
   // Estados del formulario
@@ -57,10 +59,13 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
   const [tiktok, setTikTok] = useState(profile.tiktok || "");
   const [website, setWebsite] = useState(profile.website || "");
   
-  // Modelos Thermomix
-  const [selectedModels, setSelectedModels] = useState<string[]>(
-    profile.thermomixModel && profile.thermomixModel !== "none" ? [profile.thermomixModel] : []
-  );
+  // Modelos Thermomix - guardar como string (el primer modelo seleccionado o "none")
+  const [selectedModels, setSelectedModels] = useState<string[]>(() => {
+    if (profile.thermomixModel && profile.thermomixModel !== "none") {
+      return [profile.thermomixModel];
+    }
+    return [];
+  });
   const [planToBuy, setPlanToBuy] = useState(false);
   const [noThermomix, setNoThermomix] = useState(profile.thermomixModel === "none");
   
@@ -68,6 +73,26 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>(
     profile.foodPreferences || []
   );
+
+  // Sincronizar con props cuando cambien (después de guardar)
+  useEffect(() => {
+    setName(profile.name);
+    setEmail(profile.email);
+    setWhatsapp(profile.whatsapp || "");
+    setFacebookUser(profile.facebook || "");
+    setInstagram(profile.instagram || "");
+    setTwitter(profile.twitter || "");
+    setTikTok(profile.tiktok || "");
+    setWebsite(profile.website || "");
+    
+    if (profile.thermomixModel && profile.thermomixModel !== "none") {
+      setSelectedModels([profile.thermomixModel]);
+    } else {
+      setSelectedModels([]);
+    }
+    setNoThermomix(profile.thermomixModel === "none");
+    setSelectedPreferences(profile.foodPreferences || []);
+  }, [profile]);
 
   const isModelsDisabled = noThermomix;
 
@@ -84,6 +109,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
     
     setIsSaving(true);
     
+    // Determinar el modelo final (solo guardamos el primero seleccionado)
     let finalModel: string;
     if (noThermomix) {
       finalModel = "none";
@@ -112,6 +138,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
       
       if (error) throw error;
       
+      // Actualizar email si cambió
       if (email !== profile.email) {
         const { error: emailError } = await supabase.auth.updateUser({
           email: email,
@@ -122,6 +149,9 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
           description: "Se ha enviado un enlace de confirmación a tu nuevo correo.",
         });
       }
+      
+      // Invalidar queries para refrescar los datos
+      await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
       
       toast({
         title: "Perfil actualizado",
@@ -224,6 +254,11 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
                 </div>
               ))}
             </div>
+            {selectedModels.length > 1 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Nota: Solo se guardará el primer modelo seleccionado por ahora.
+              </p>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
@@ -262,7 +297,6 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
                   checked={selectedPreferences.includes(category)}
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      set
                       setSelectedPreferences([...selectedPreferences, category]);
                     } else {
                       setSelectedPreferences(
