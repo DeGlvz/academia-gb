@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ['"Butterfly"', '"Dancing Script"', 'cursive'],
-        body: ['"KG Call Me Maybe"', '"Quicksand"', 'sans-serif'],
+        display: ['"Dancing Script"', 'cursive'],
+        body: ['"Quicksand"', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
