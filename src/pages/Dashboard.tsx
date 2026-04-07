@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   BookOpen, Clock, Calculator, Award, ChevronRight, CheckCircle, User,
-  FileText, Circle,
+  FileText, Circle, Gift, Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,9 +35,9 @@ const Dashboard = () => {
     enabled: !!user,
   });
 
-  // Fetch enrolled classes
-  const { data: enrolledClasses = [] } = useQuery({
-    queryKey: ["enrolled-classes", user?.id],
+  // Fetch ALL enrolled classes (para luego separar)
+  const { data: allEnrolled = [] } = useQuery({
+    queryKey: ["all-enrolled", user?.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("enrolled_classes")
@@ -47,6 +47,52 @@ const Dashboard = () => {
     },
     enabled: !!user,
   });
+
+  // Separar clases pagas y gratis
+  const enrolledClasses = allEnrolled.filter((ec: any) => ec.classes?.price > 0);
+  const freeClasses = allEnrolled.filter((ec: any) => ec.classes?.price === 0);
+
+  // Fetch todas las lecciones de las clases del usuario (pagar y gratis)
+  const { data: allLessons = [] } = useQuery({
+    queryKey: ["all-lessons", user?.id, allEnrolled.length],
+    queryFn: async () => {
+      if (allEnrolled.length === 0) return [];
+      
+      // Obtener todos los class_id de las clases inscritas
+      const classIds = allEnrolled.map((ec: any) => ec.class_id);
+      
+      const { data } = await supabase
+        .from("lessons")
+        .select("*")
+        .in("class_id", classIds);
+      
+      return data ?? [];
+    },
+    enabled: !!user && allEnrolled.length > 0,
+  });
+
+  // Fetch progreso de lecciones del usuario
+  const { data: lessonProgress = [] } = useQuery({
+    queryKey: ["lesson-progress", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("lesson_progress")
+        .select("*")
+        .eq("user_id", user!.id);
+      return data ?? [];
+    },
+    enabled: !!user,
+  });
+
+  // Calcular progreso general de lecciones
+  const totalLessons = allLessons.length;
+  const completedLessonsIds = new Set(
+    lessonProgress
+      .filter((lp: any) => lp.completed === true)
+      .map((lp: any) => lp.lesson_id)
+  );
+  const completedLessons = Array.from(completedLessonsIds).length;
+  const overallProgress = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   // Fetch blog posts y progress
   const { data: blogPosts = [] } = useQuery({
@@ -75,11 +121,6 @@ const Dashboard = () => {
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Alumna";
   
-  // Calcular progreso de clases
-  const totalLessons = 0;
-  const completedLessons = 0;
-  const overallProgress = 0;
-  
   // Calcular progreso de blog
   const readPostIds = new Set(blogProgress.map((bp: any) => bp.post_id));
   const readCount = blogPosts.filter((post: any) => readPostIds.has(post.id)).length;
@@ -97,6 +138,14 @@ const Dashboard = () => {
     registeredAt: profile?.created_at?.split("T")[0] ?? "",
     avatar: profile?.avatar_url ?? null,
   };
+
+  // Stats cards data
+  const statsCards = [
+    { icon: <BookOpen className="h-5 w-5 text-primary" />, value: enrolledClasses.length, label: "Clases pagas" },
+    { icon: <Gift className="h-5 w-5 text-primary" />, value: freeClasses.length, label: "Clases gratis" },
+    { icon: <FileText className="h-5 w-5 text-primary" />, value: readCount, label: "Artículos leídos" },
+    { icon: <Award className="h-5 w-5 text-primary" />, value: `${overallProgress}%`, label: "Progreso total" },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -117,48 +166,49 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        <ProfileEditor profile={profileData} />
-
+        {/* Stats Cards */}
         <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-4" initial="hidden" animate="visible" variants={staggerContainer}>
-          {[
-            { icon: <BookOpen className="h-5 w-5 text-primary" />, value: enrolledClasses.length, label: "Clases adquiridas" },
-            { icon: <FileText className="h-5 w-5 text-primary" />, value: readCount, label: "Artículos leídos" },
-            { icon: <CheckCircle className="h-5 w-5 text-primary" />, value: completedLessons, label: "Lecciones completadas" },
-            { icon: <Award className="h-5 w-5 text-primary" />, value: `${blogProgressPercent}%`, label: "Blog completado" },
-          ].map((stat) => (
+          {statsCards.map((stat) => (
             <motion.div key={stat.label} variants={staggerItem}>
               <Card><CardContent className="pt-5 pb-4 flex flex-col items-center text-center gap-2">{stat.icon}<span className="text-2xl font-bold text-foreground">{stat.value}</span><span className="text-xs text-muted-foreground leading-tight">{stat.label}</span></CardContent></Card>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* Tabs para Mis Clases y Mi Blog */}
+        {/* TABS: Mis Clases | Clases Gratis | Mi Blog | Mi Perfil */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="clases" className="gap-2">
               <BookOpen className="h-4 w-4" />
               Mis clases
+            </TabsTrigger>
+            <TabsTrigger value="gratis" className="gap-2">
+              <Gift className="h-4 w-4" />
+              Clases gratis
             </TabsTrigger>
             <TabsTrigger value="blog" className="gap-2">
               <FileText className="h-4 w-4" />
               Mi blog
             </TabsTrigger>
+            <TabsTrigger value="perfil" className="gap-2">
+              <Settings className="h-4 w-4" />
+              Mi perfil
+            </TabsTrigger>
           </TabsList>
 
-          {/* Tab: Mis Clases */}
+          {/* TAB 1: Mis Clases (pagas) */}
           <TabsContent value="clases" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-display font-bold text-foreground">Mis clases</h2>
+              <h2 className="text-xl font-display font-bold text-foreground">Mis clases adquiridas</h2>
               <Button variant="ghost" size="sm" asChild className="gap-1 font-body text-xs">
                 <Link to="/clases">Ver catálogo <ChevronRight className="h-3.5 w-3.5" /></Link>
               </Button>
             </div>
             
-            {/* Progreso general de clases */}
             <Card>
               <CardContent className="pt-6 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold text-foreground">Progreso general</h2>
+                  <h2 className="text-base font-semibold text-foreground">Progreso general de lecciones</h2>
                   <span className="text-sm font-bold text-primary">{overallProgress}%</span>
                 </div>
                 <Progress value={overallProgress} className="h-3" />
@@ -170,27 +220,95 @@ const Dashboard = () => {
               <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Aún no tienes clases adquiridas.</p><Button className="mt-4 font-body" asChild><Link to="/clases">Explorar clases</Link></Button></CardContent></Card>
             ) : (
               <div className="grid sm:grid-cols-2 gap-4">
-                {enrolledClasses.map((ec: any) => (
-                  <Card key={ec.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-4 flex gap-4">
-                      {ec.classes?.image_url && (
-                        <img src={ec.classes.image_url} alt={ec.classes.title} className="h-20 w-20 rounded-lg object-cover shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <p className="text-sm font-semibold text-foreground truncate">{ec.classes?.title}</p>
-                        <p className="text-xs text-muted-foreground">{ec.classes?.category}</p>
-                        <Button size="sm" variant="outline" className="mt-2 text-xs gap-1" asChild>
-                          <Link to={`/clases/${ec.classes?.slug}`}>Ver clase <ChevronRight className="h-3 w-3" /></Link>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                {enrolledClasses.map((ec: any) => {
+                  // Calcular progreso por clase
+                  const classLessons = allLessons.filter((lesson: any) => lesson.class_id === ec.class_id);
+                  const classCompleted = classLessons.filter((lesson: any) => completedLessonsIds.has(lesson.id)).length;
+                  const classProgress = classLessons.length > 0 ? Math.round((classCompleted / classLessons.length) * 100) : 0;
+                  
+                  return (
+                    <Card key={ec.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-4 flex gap-4">
+                        {ec.classes?.image_url && (
+                          <img src={ec.classes.image_url} alt={ec.classes.title} className="h-20 w-20 rounded-lg object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="text-sm font-semibold text-foreground truncate">{ec.classes?.title}</p>
+                          <p className="text-xs text-muted-foreground">{ec.classes?.category}</p>
+                          {classLessons.length > 0 && (
+                            <div className="mt-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">Progreso</span>
+                                <span className="text-primary font-medium">{classProgress}%</span>
+                              </div>
+                              <Progress value={classProgress} className="h-1.5 mt-1" />
+                            </div>
+                          )}
+                          <Button size="sm" variant="outline" className="mt-2 text-xs gap-1" asChild>
+                            <Link to={`/clases/${ec.classes?.slug}`}>Ver clase <ChevronRight className="h-3 w-3" /></Link>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
 
-          {/* Tab: Mi Blog */}
+          {/* TAB 2: Clases Gratis (De mi cocina a tu cocina) */}
+          <TabsContent value="gratis" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-display font-bold text-foreground">Clases gratis</h2>
+              <Button variant="ghost" size="sm" asChild className="gap-1 font-body text-xs">
+                <Link to="/#clases-gratis">Ver más gratis <ChevronRight className="h-3.5 w-3.5" /></Link>
+              </Button>
+            </div>
+
+            {freeClasses.length === 0 ? (
+              <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Aún no has agregado clases gratis.</p><Button className="mt-4 font-body" asChild><Link to="/#clases-gratis">Explorar clases gratis</Link></Button></CardContent></Card>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {freeClasses.map((ec: any) => {
+                  // Calcular progreso por clase gratis
+                  const classLessons = allLessons.filter((lesson: any) => lesson.class_id === ec.class_id);
+                  const classCompleted = classLessons.filter((lesson: any) => completedLessonsIds.has(lesson.id)).length;
+                  const classProgress = classLessons.length > 0 ? Math.round((classCompleted / classLessons.length) * 100) : 0;
+                  
+                  return (
+                    <Card key={ec.id} className="hover:shadow-md transition-shadow border-primary/20 bg-primary/5">
+                      <CardContent className="p-4 flex gap-4">
+                        {ec.classes?.image_url && (
+                          <img src={ec.classes.image_url} alt={ec.classes.title} className="h-20 w-20 rounded-lg object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Gift className="h-3.5 w-3.5 text-primary" />
+                            <p className="text-sm font-semibold text-foreground truncate">{ec.classes?.title}</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{ec.classes?.category}</p>
+                          {classLessons.length > 0 && (
+                            <div className="mt-2">
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="text-muted-foreground">Progreso</span>
+                                <span className="text-primary font-medium">{classProgress}%</span>
+                              </div>
+                              <Progress value={classProgress} className="h-1.5 mt-1" />
+                            </div>
+                          )}
+                          <Button size="sm" variant="outline" className="mt-2 text-xs gap-1" asChild>
+                            <Link to={`/clases/${ec.classes?.slug}`}>Ver clase <ChevronRight className="h-3 w-3" /></Link>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* TAB 3: Mi Blog (sin cambios) */}
           <TabsContent value="blog" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-display font-bold text-foreground">Mi blog</h2>
@@ -199,7 +317,6 @@ const Dashboard = () => {
               </Button>
             </div>
 
-            {/* Progreso del blog */}
             <Card>
               <CardContent className="pt-6 space-y-3">
                 <div className="flex items-center justify-between">
@@ -247,9 +364,17 @@ const Dashboard = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* TAB 4: Mi Perfil */}
+          <TabsContent value="perfil" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-display font-bold text-foreground">Mi perfil</h2>
+            </div>
+            <ProfileEditor profile={profileData} />
+          </TabsContent>
         </Tabs>
 
-        {/* Herramientas */}
+        {/* Herramientas (sin cambios) */}
         <motion.section className="space-y-4" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={staggerContainer}>
           <h2 className="text-xl font-display font-bold text-foreground">Mis herramientas</h2>
           <div className="grid sm:grid-cols-2 gap-4">
