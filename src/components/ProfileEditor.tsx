@@ -263,3 +263,32 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
                   onCheckedChange={(checked) => {
                     if (checked) {
                       set
+                      setSelectedPreferences([...selectedPreferences, category]);
+                    } else {
+                      setSelectedPreferences(
+                        selectedPreferences.filter((p) => p !== category)
+                      );
+                    }
+                  }}
+                />
+                <Label htmlFor={`pref-${category}`} className="text-sm font-normal">
+                  {category}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Botón Guardar */}
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+          <Save className="h-4 w-4" />
+          {isSaving ? "Guardando..." : "Guardar cambios"}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default ProfileEditor;
