@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, User, Shield, LogOut, LogIn } from "lucide-react";
+import { Menu, X, User, Shield, LogOut, LogIn, Search, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import logo from "@/assets/logo-gaby-bernal.png";
@@ -13,17 +13,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
-const Header = () => {
+interface HeaderProps {
+  onSearchClick?: () => void;
+  onSobreGabyClick?: () => void;
+}
+
+const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, isAdmin, signOut } = useAuth();
-
-  const navItems = [
-    { label: "Inicio", href: "/" },
-    { label: "Clases", href: "/clases" },
-    { label: "Calculadora", href: "/herramientas/calculadora-panadero" },
-    { label: "Sobre Gaby", href: "#sobre" },
-  ];
 
   const initials = user?.user_metadata?.full_name
     ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)
@@ -32,21 +37,95 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b">
       <div className="container flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center">
+        {/* Logo */}
+        <Link to="/" className="flex items-center shrink-0">
           <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain max-w-[140px] sm:max-w-[180px]" />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-6">
-          {navItems.map((item) =>
-            item.href.startsWith("/") ? (
-              <Link key={item.label} to={item.href} className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">{item.label}</Link>
-            ) : (
-              <a key={item.label} href={item.href} className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">{item.label}</a>
-            )
-          )}
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-4">
+          <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">
+            Inicio
+          </Link>
+
+          {/* Submenú Clases */}
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="text-sm font-medium text-foreground/70 hover:text-primary bg-transparent">
+                  Clases
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
+                    <Link
+                      to="/clases"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      📚 Catálogo de clases
+                    </Link>
+                    <Link
+                      to="/#clases-gratis"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      🎁 Clases gratis
+                    </Link>
+                    {user && (
+                      <Link
+                        to="/mi-perfil"
+                        className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                      >
+                        📊 Mi progreso
+                      </Link>
+                    )}
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+
+          {/* Submenú Herramientas */}
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="text-sm font-medium text-foreground/70 hover:text-primary bg-transparent">
+                  Herramientas
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
+                    <Link
+                      to="/herramientas/calculadora-panadero"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      🧮 Calculadora Panadera Pro
+                    </Link>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+
+          {/* Sobre Gaby (Modal) */}
+          <button
+            onClick={onSobreGabyClick}
+            className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors"
+          >
+            Sobre Gaby
+          </button>
         </nav>
 
+        {/* Right side: Search + Cart + Auth */}
         <div className="flex items-center gap-2">
+          {/* Botón búsqueda */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onSearchClick}
+            className="rounded-full"
+            aria-label="Buscar"
+          >
+            <Search className="h-5 w-5" />
+          </Button>
+
           <CartDrawer />
 
           {user ? (
@@ -86,25 +165,26 @@ const Header = () => {
             </Button>
           )}
 
+          {/* Mobile menu button */}
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
 
+      {/* Mobile Navigation */}
       {isMenuOpen && (
         <nav className="md:hidden border-t bg-background px-4 py-4 space-y-3 animate-fade-in">
-          {navItems.map((item) =>
-            item.href.startsWith("/") ? (
-              <Link key={item.label} to={item.href} className="block text-base font-medium text-foreground/80 hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>{item.label}</Link>
-            ) : (
-              <a key={item.label} href={item.href} className="block text-base font-medium text-foreground/80 hover:text-primary transition-colors" onClick={() => setIsMenuOpen(false)}>{item.label}</a>
-            )
+          <Link to="/" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
+          <Link to="/clases" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>📚 Catálogo de clases</Link>
+          <Link to="/#clases-gratis" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>🎁 Clases gratis</Link>
+          {user && (
+            <Link to="/mi-perfil" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>📊 Mi progreso</Link>
           )}
+          <Link to="/herramientas/calculadora-panadero" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>🧮 Calculadora Panadera Pro</Link>
+          <button onClick={() => { onSobreGabyClick?.(); setIsMenuOpen(false); }} className="block text-base font-medium">Sobre Gaby</button>
           {!user && (
-            <Link to="/auth" className="block text-base font-medium text-primary" onClick={() => setIsMenuOpen(false)}>
-              Iniciar sesión
-            </Link>
+            <Link to="/auth" className="block text-base font-medium text-primary" onClick={() => setIsMenuOpen(false)}>Iniciar sesión</Link>
           )}
         </nav>
       )}
