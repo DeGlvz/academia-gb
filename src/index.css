@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Fonts */
+@font-face {
+  font-family: 'Butterfly';
+  src: url('@/assets/fonts/Butterfly.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KG Call Me Maybe';
+  src: url('@/assets/fonts/KGCallMeMaybe.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Design System — Gaby Bernal en tu Cocina
+   Pantone 3252 C (menta) as primary
+   Fonts: Butterfly (display), KG Call Me Maybe (body)
+*/
+
+@layer base {
+  :root {
+    --background: 150 20% 98%;
+    --foreground: 174 30% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 174 30% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 174 30% 12%;
+
+    /* Pantone 3252 C ≈ #56C9C1 → HSL(174, 48%, 56%) */
+    --primary: 174 48% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 174 30% 92%;
+    --secondary-foreground: 174 40% 20%;
+
+    --muted: 150 15% 94%;
+    --muted-foreground: 174 10% 45%;
+
+    --accent: 174 55% 85%;
+    --accent-foreground: 174 45% 18%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 174 20% 88%;
+    --input: 174 20% 88%;
+    --ring: 174 48% 56%;
+
+    --radius: 0.875rem;
+
+    --mint-50: 174 50% 96%;
+    --mint-100: 174 48% 90%;
+    --mint-200: 174 48% 80%;
+    --mint-300: 174 48% 68%;
+    --mint-400: 174 48% 56%;
+    --mint-500: 174 50% 44%;
+    --mint-600: 174 52% 34%;
+    --mint-700: 174 50% 24%;
+
+    --warm: 30 60% 96%;
+    --warm-foreground: 30 40% 30%;
+
+    --sidebar-background: 174 30% 97%;
+    --sidebar-foreground: 174 20% 25%;
+    --sidebar-primary: 174 48% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 174 35% 92%;
+    --sidebar-accent-foreground: 174 40% 18%;
+    --sidebar-border: 174 20% 90%;
+    --sidebar-ring: 174 48% 56%;
+  }
+
+  .dark {
+    --background: 174 25% 7%;
+    --foreground: 150 15% 92%;
+
+    --card: 174 25% 10%;
+    --card-foreground: 150 15% 92%;
+
+    --popover: 174 25% 10%;
+    --popover-foreground: 150 15% 92%;
+
+    --primary: 174 48% 56%;
+    --primary-foreground: 174 40% 8%;
+
+    --secondary: 174 25% 16%;
+    --secondary-foreground: 150 15% 90%;
+
+    --muted: 174 20% 15%;
+    --muted-foreground: 174 12% 55%;
+
+    --accent: 174 30% 20%;
+    --accent-foreground: 150 15% 92%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 174 20% 18%;
+    --input: 174 20% 18%;
+    --ring: 174 48% 56%;
+
+    --sidebar-background: 174 25% 8%;
+    --sidebar-foreground: 150 15% 90%;
+    --sidebar-primary: 174 48% 56%;
+    --sidebar-primary-foreground: 174 40% 8%;
+    --sidebar-accent: 174 25% 14%;
+    --sidebar-accent-foreground: 150 15% 90%;
+    --sidebar-border: 174 20% 16%;
+    --sidebar-ring: 174 48% 56%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
