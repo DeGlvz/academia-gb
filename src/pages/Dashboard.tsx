@@ -123,6 +123,10 @@ const Dashboard = () => {
   
   const hasCalculadoraAccess = enrolledClasses.some((ec: any) => ec.classes?.slug === "pan-artesanal-desde-cero");
 
+  // Obtener la lista de modelos (array)
+  const thermomixModelsList = profile?.thermomix_models ?? ["TM6"];
+  const displayModels = thermomixModelsList.join(", ");
+
   const profileData = {
     name: displayName,
     email: user?.email ?? "",
@@ -132,7 +136,7 @@ const Dashboard = () => {
     twitter: profile?.twitter || "",
     tiktok: profile?.tiktok || "",
     website: profile?.website || "",
-    thermomixModel: (profile?.thermomix_model ?? "TM6") as "TM31" | "TM5" | "TM6" | "TM7",
+    thermomixModels: thermomixModelsList,
     foodPreferences: (profile?.food_preferences ?? []) as any[],
     registeredAt: profile?.created_at?.split("T")[0] ?? "",
     avatar: profile?.avatar_url ?? null,
@@ -184,7 +188,9 @@ const Dashboard = () => {
           </div>
           <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">¡Hola, {displayName.split(" ")[0]}!</h1>
-            <p className="text-sm text-muted-foreground">{user?.email} · {profileData.thermomixModel} · Miembro desde {profileData.registeredAt}</p>
+            <p className="text-sm text-muted-foreground">
+              {user?.email} · Modelos: {displayModels} · Miembro desde {profileData.registeredAt}
+            </p>
           </div>
         </motion.div>
 
