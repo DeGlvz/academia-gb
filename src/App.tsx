@@ -13,6 +13,8 @@ import NotFound from "./pages/NotFound.tsx";
 import CalculadoraPanadero from "./pages/CalculadoraPanadero.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import Auth from "./pages/Auth.tsx";
+import BlogBasicos from "./pages/BlogBasicos.tsx";
+import BlogPostDetalle from "./pages/BlogPostDetalle.tsx";
 import AdminLayout from "./components/admin/AdminLayout.tsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import AdminClases from "./pages/admin/AdminClases.tsx";
@@ -39,6 +41,11 @@ const App = () => (
               <Route path="/herramientas/calculadora-panadero" element={<CalculadoraPanadero />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/mi-perfil" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              
+              {/* Rutas del blog */}
+              <Route path="/basicos" element={<BlogBasicos />} />
+              <Route path="/blog/:slug" element={<BlogPostDetalle />} />
+              
               <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminLayout /></ProtectedRoute>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="clases" element={<AdminClases />} />
