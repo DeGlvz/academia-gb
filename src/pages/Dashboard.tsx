@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   BookOpen, Clock, Calculator, Award, ChevronRight, CheckCircle, User,
-  FileText, Circle, Gift, Settings,
+  FileText, Circle, Gift, Settings, Home, TrendingUp, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("clases");
+  const [activeTab, setActiveTab] = useState("inicio");
 
   // Fetch profile
   const { data: profile } = useQuery({
@@ -52,13 +52,12 @@ const Dashboard = () => {
   const enrolledClasses = allEnrolled.filter((ec: any) => ec.classes?.price > 0);
   const freeClasses = allEnrolled.filter((ec: any) => ec.classes?.price === 0);
 
-  // Fetch todas las lecciones de las clases del usuario (pagar y gratis)
+  // Fetch todas las lecciones de las clases del usuario
   const { data: allLessons = [] } = useQuery({
     queryKey: ["all-lessons", user?.id, allEnrolled.length],
     queryFn: async () => {
       if (allEnrolled.length === 0) return [];
       
-      // Obtener todos los class_id de las clases inscritas
       const classIds = allEnrolled.map((ec: any) => ec.class_id);
       
       const { data } = await supabase
@@ -84,7 +83,7 @@ const Dashboard = () => {
     enabled: !!user,
   });
 
-  // Calcular progreso general de lecciones
+  // Calcular progreso general de lecciones (global)
   const totalLessons = allLessons.length;
   const completedLessonsIds = new Set(
     lessonProgress
@@ -121,7 +120,7 @@ const Dashboard = () => {
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Alumna";
   
-  // Calcular progreso de blog
+  // Calcular progreso de lecturas
   const readPostIds = new Set(blogProgress.map((bp: any) => bp.post_id));
   const readCount = blogPosts.filter((post: any) => readPostIds.has(post.id)).length;
   const blogProgressPercent = blogPosts.length > 0 ? Math.round((readCount / blogPosts.length) * 100) : 0;
@@ -131,27 +130,53 @@ const Dashboard = () => {
   const profileData = {
     name: displayName,
     email: user?.email ?? "",
-    whatsapp: "",
-    facebook: "",
+    whatsapp: profile?.whatsapp || "",
+    facebook: profile?.facebook || "",
     thermomixModel: (profile?.thermomix_model ?? "TM6") as "TM31" | "TM5" | "TM6" | "TM7",
     foodPreferences: (profile?.food_preferences ?? []) as any[],
     registeredAt: profile?.created_at?.split("T")[0] ?? "",
     avatar: profile?.avatar_url ?? null,
   };
 
-  // Stats cards data
+  // Stats cards para el inicio
   const statsCards = [
-    { icon: <BookOpen className="h-5 w-5 text-primary" />, value: enrolledClasses.length, label: "Clases pagas" },
-    { icon: <Gift className="h-5 w-5 text-primary" />, value: freeClasses.length, label: "Clases gratis" },
-    { icon: <FileText className="h-5 w-5 text-primary" />, value: readCount, label: "Artículos leídos" },
-    { icon: <Award className="h-5 w-5 text-primary" />, value: `${overallProgress}%`, label: "Progreso total" },
+    { icon: <BookOpen className="h-5 w-5 text-primary" />, value: enrolledClasses.length, label: "Clases pagas", color: "bg-blue-50" },
+    { icon: <Gift className="h-5 w-5 text-primary" />, value: freeClasses.length, label: "Clases gratis", color: "bg-green-50" },
+    { icon: <FileText className="h-5 w-5 text-primary" />, value: readCount, label: "Artículos leídos", color: "bg-purple-50" },
+    { icon: <TrendingUp className="h-5 w-5 text-primary" />, value: `${overallProgress}%`, label: "Progreso total", color: "bg-orange-50" },
   ];
+
+  // Últimas actividades (simuladas con datos reales)
+  const recentActivities = [
+    ...enrolledClasses.slice(0, 2).map((ec: any) => ({
+      type: "clase",
+      title: ec.classes?.title,
+      date: ec.created_at,
+      icon: <BookOpen className="h-4 w-4" />,
+    })),
+    ...freeClasses.slice(0, 1).map((ec: any) => ({
+      type: "gratis",
+      title: ec.classes?.title,
+      date: ec.created_at,
+      icon: <Gift className="h-4 w-4" />,
+    })),
+    ...blogProgress.slice(0, 1).map((bp: any) => {
+      const post = blogPosts.find((p: any) => p.id === bp.post_id);
+      return {
+        type: "lectura",
+        title: post?.title,
+        date: bp.read_at,
+        icon: <FileText className="h-4 w-4" />,
+      };
+    }),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 3);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
 
       <main className="flex-1 container px-4 py-8 max-w-5xl space-y-8">
+        {/* Header con avatar y saludo */}
         <motion.div className="flex flex-col sm:flex-row items-start sm:items-center gap-5" initial="hidden" animate="visible" variants={fadeInUp}>
           <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden border-2 border-primary/30">
             {profileData.avatar ? (
@@ -166,18 +191,13 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
-        <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-4" initial="hidden" animate="visible" variants={staggerContainer}>
-          {statsCards.map((stat) => (
-            <motion.div key={stat.label} variants={staggerItem}>
-              <Card><CardContent className="pt-5 pb-4 flex flex-col items-center text-center gap-2">{stat.icon}<span className="text-2xl font-bold text-foreground">{stat.value}</span><span className="text-xs text-muted-foreground leading-tight">{stat.label}</span></CardContent></Card>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* TABS: Mis Clases | Clases Gratis | Mi Blog | Mi Perfil */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
+        {/* TABS: Inicio | Mis clases | Clases gratis | Mi rincón de lectura | Mi perfil */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-3xl grid-cols-5">
+            <TabsTrigger value="inicio" className="gap-2">
+              <Home className="h-4 w-4" />
+              Inicio
+            </TabsTrigger>
             <TabsTrigger value="clases" className="gap-2">
               <BookOpen className="h-4 w-4" />
               Mis clases
@@ -186,9 +206,9 @@ const Dashboard = () => {
               <Gift className="h-4 w-4" />
               Clases gratis
             </TabsTrigger>
-            <TabsTrigger value="blog" className="gap-2">
+            <TabsTrigger value="lecturas" className="gap-2">
               <FileText className="h-4 w-4" />
-              Mi blog
+              Mi rincón de lectura
             </TabsTrigger>
             <TabsTrigger value="perfil" className="gap-2">
               <Settings className="h-4 w-4" />
@@ -196,7 +216,82 @@ const Dashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* TAB 1: Mis Clases (pagas) */}
+          {/* ==================== TAB 1: INICIO ==================== */}
+          <TabsContent value="inicio" className="space-y-6">
+            {/* Stats Cards */}
+            <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-4" variants={staggerContainer} initial="hidden" animate="visible">
+              {statsCards.map((stat) => (
+                <motion.div key={stat.label} variants={staggerItem}>
+                  <Card className={`${stat.color} hover:shadow-md transition-shadow`}>
+                    <CardContent className="pt-5 pb-4 flex flex-col items-center text-center gap-2">
+                      {stat.icon}
+                      <span className="text-2xl font-bold text-foreground">{stat.value}</span>
+                      <span className="text-xs text-muted-foreground leading-tight">{stat.label}</span>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Progreso Global */}
+            <Card>
+              <CardContent className="pt-6 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <h2 className="text-base font-semibold text-foreground">Tu progreso global</h2>
+                  </div>
+                  <span className="text-sm font-bold text-primary">{overallProgress}%</span>
+                </div>
+                <Progress value={overallProgress} className="h-3" />
+                <p className="text-xs text-muted-foreground">
+                  {completedLessons} de {totalLessons} lecciones completadas 
+                  {totalLessons === 0 && " (Comienza una clase para ver tu progreso)"}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Actividades Recientes */}
+            {recentActivities.length > 0 && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    <h2 className="text-base font-semibold text-foreground">Tu actividad reciente</h2>
+                  </div>
+                  <div className="space-y-3">
+                    {recentActivities.map((activity, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-muted/20">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          {activity.icon}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-foreground">{activity.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(activity.date).toLocaleDateString("es-MX")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Mensaje si no hay actividad */}
+            {recentActivities.length === 0 && (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Aún no hay actividad reciente.</p>
+                  <Button className="mt-4 font-body" asChild>
+                    <Link to="/clases">Explorar clases</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* ==================== TAB 2: MIS CLASES (pagas) ==================== */}
           <TabsContent value="clases" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-display font-bold text-foreground">Mis clases adquiridas</h2>
@@ -204,24 +299,12 @@ const Dashboard = () => {
                 <Link to="/clases">Ver catálogo <ChevronRight className="h-3.5 w-3.5" /></Link>
               </Button>
             </div>
-            
-            <Card>
-              <CardContent className="pt-6 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold text-foreground">Progreso general de lecciones</h2>
-                  <span className="text-sm font-bold text-primary">{overallProgress}%</span>
-                </div>
-                <Progress value={overallProgress} className="h-3" />
-                <p className="text-xs text-muted-foreground">{completedLessons} de {totalLessons} lecciones completadas</p>
-              </CardContent>
-            </Card>
 
             {enrolledClasses.length === 0 ? (
               <Card><CardContent className="py-12 text-center"><p className="text-muted-foreground">Aún no tienes clases adquiridas.</p><Button className="mt-4 font-body" asChild><Link to="/clases">Explorar clases</Link></Button></CardContent></Card>
             ) : (
               <div className="grid sm:grid-cols-2 gap-4">
                 {enrolledClasses.map((ec: any) => {
-                  // Calcular progreso por clase
                   const classLessons = allLessons.filter((lesson: any) => lesson.class_id === ec.class_id);
                   const classCompleted = classLessons.filter((lesson: any) => completedLessonsIds.has(lesson.id)).length;
                   const classProgress = classLessons.length > 0 ? Math.round((classCompleted / classLessons.length) * 100) : 0;
@@ -256,7 +339,7 @@ const Dashboard = () => {
             )}
           </TabsContent>
 
-          {/* TAB 2: Clases Gratis (De mi cocina a tu cocina) */}
+          {/* ==================== TAB 3: CLASES GRATIS ==================== */}
           <TabsContent value="gratis" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-display font-bold text-foreground">Clases gratis</h2>
@@ -270,7 +353,6 @@ const Dashboard = () => {
             ) : (
               <div className="grid sm:grid-cols-2 gap-4">
                 {freeClasses.map((ec: any) => {
-                  // Calcular progreso por clase gratis
                   const classLessons = allLessons.filter((lesson: any) => lesson.class_id === ec.class_id);
                   const classCompleted = classLessons.filter((lesson: any) => completedLessonsIds.has(lesson.id)).length;
                   const classProgress = classLessons.length > 0 ? Math.round((classCompleted / classLessons.length) * 100) : 0;
@@ -308,12 +390,12 @@ const Dashboard = () => {
             )}
           </TabsContent>
 
-          {/* TAB 3: Mi Blog (sin cambios) */}
-          <TabsContent value="blog" className="space-y-4">
+          {/* ==================== TAB 4: MI RINCÓN DE LECTURA ==================== */}
+          <TabsContent value="lecturas" className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-display font-bold text-foreground">Mi blog</h2>
+              <h2 className="text-xl font-display font-bold text-foreground">Mi rincón de lectura</h2>
               <Button variant="ghost" size="sm" asChild className="gap-1 font-body text-xs">
-                <Link to="/basicos">Ver todos <ChevronRight className="h-3.5 w-3.5" /></Link>
+                <Link to="/basicos">Ver todos los artículos <ChevronRight className="h-3.5 w-3.5" /></Link>
               </Button>
             </div>
 
@@ -354,7 +436,7 @@ const Dashboard = () => {
                         </div>
                         <Button size="sm" variant="ghost" asChild className="shrink-0">
                           <Link to={`/blog/${post.slug}`}>
-                            {isRead ? "Leer otra vez" : "Leer artículo"}
+                            {isRead ? "Leer otra vez" : "Comenzar a leer"}
                           </Link>
                         </Button>
                       </CardContent>
@@ -365,7 +447,7 @@ const Dashboard = () => {
             )}
           </TabsContent>
 
-          {/* TAB 4: Mi Perfil */}
+          {/* ==================== TAB 5: MI PERFIL ==================== */}
           <TabsContent value="perfil" className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-display font-bold text-foreground">Mi perfil</h2>
@@ -374,7 +456,7 @@ const Dashboard = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Herramientas (sin cambios) */}
+        {/* Herramientas */}
         <motion.section className="space-y-4" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={staggerContainer}>
           <h2 className="text-xl font-display font-bold text-foreground">Mis herramientas</h2>
           <div className="grid sm:grid-cols-2 gap-4">
