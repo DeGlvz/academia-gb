@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Instagram, Facebook, Youtube, Globe, Save } from "lucide-react";
+import { Save, Instagram, Facebook, Twitter, Tv, Globe } from "lucide-react";
 
 interface ProfileEditorProps {
   profile: {
@@ -47,12 +47,18 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
   const [whatsapp, setWhatsapp] = useState(profile.whatsapp || "");
   const [facebookUser, setFacebookUser] = useState(profile.facebook || "");
   
+  // Redes sociales del alumno
+  const [instagram, setInstagram] = useState(profile.instagram || "");
+  const [twitter, setTwitter] = useState(profile.twitter || "");
+  const [tiktok, setTikTok] = useState(profile.tiktok || "");
+  const [website, setWebsite] = useState(profile.website || "");
+  
   // Modelos Thermomix
   const [selectedModels, setSelectedModels] = useState<string[]>(
-    profile.thermomixModel ? [profile.thermomixModel] : []
+    profile.thermomixModel && profile.thermomixModel !== "none" ? [profile.thermomixModel] : []
   );
   const [planToBuy, setPlanToBuy] = useState(false);
-  const [noThermomix, setNoThermomix] = useState(false);
+  const [noThermomix, setNoThermomix] = useState(profile.thermomixModel === "none");
   
   // Preferencias de alimentación
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>(
@@ -77,14 +83,14 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
     
     setIsSaving(true);
     
-    // Determinar el modelo final (si no tiene Thermomix, guardar "none")
+    // Determinar el modelo final
     let finalModel: string;
     if (noThermomix) {
       finalModel = "none";
     } else if (selectedModels.length > 0) {
-      finalModel = selectedModels[0]; // Por ahora guarda el primero
+      finalModel = selectedModels[0];
     } else {
-      finalModel = "TM6"; // default
+      finalModel = "TM6";
     }
     
     try {
@@ -94,6 +100,10 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
           full_name: name,
           whatsapp: whatsapp,
           facebook: facebookUser,
+          instagram: instagram,
+          twitter: twitter,
+          tiktok: tiktok,
+          website: website,
           thermomix_model: finalModel,
           food_preferences: selectedPreferences,
           updated_at: new Date().toISOString(),
@@ -102,7 +112,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
       
       if (error) throw error;
       
-      // También actualizar email en auth.users (requiere confirmación)
+      // Actualizar email en auth.users si cambió
       if (email !== profile.email) {
         const { error: emailError } = await supabase.auth.updateUser({
           email: email,
@@ -128,14 +138,6 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
       setIsSaving(false);
     }
   };
-
-  // Redes sociales de Gaby
-  const socialLinks = [
-    { name: "Instagram", icon: <Instagram className="h-4 w-4" />, handle: "@gabybernalcocina", url: "https://instagram.com/gabybernalcocina" },
-    { name: "Facebook", icon: <Facebook className="h-4 w-4" />, handle: "/gabybernalcocina", url: "https://facebook.com/gabybernalcocina" },
-    { name: "YouTube", icon: <Youtube className="h-4 w-4" />, handle: "/c/GabyBernalCocina", url: "https://youtube.com/c/GabyBernalCocina" },
-    { name: "Web", icon: <Globe className="h-4 w-4" />, handle: "gabybernal.com", url: "https://gabybernal.com" },
-  ];
 
   return (
     <div className="space-y-6">
@@ -181,6 +183,64 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
                 value={facebookUser}
                 onChange={(e) => setFacebookUser(e.target.value)}
                 placeholder="tu.usuario"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Mis redes sociales (del alumno) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-display">Mis redes sociales</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Opcional - Comparte tus redes para conectar con otras alumnas
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="instagram" className="flex items-center gap-2">
+                <Instagram className="h-4 w-4" /> Instagram
+              </Label>
+              <Input
+                id="instagram"
+                value={instagram}
+                onChange={(e) => setInstagram(e.target.value)}
+                placeholder="@tu_usuario"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="twitter" className="flex items-center gap-2">
+                <Twitter className="h-4 w-4" /> X / Twitter
+              </Label>
+              <Input
+                id="twitter"
+                value={twitter}
+                onChange={(e) => setTwitter(e.target.value)}
+                placeholder="@tu_usuario"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tiktok" className="flex items-center gap-2">
+                <Tv className="h-4 w-4" /> TikTok
+              </Label>
+              <Input
+                id="tiktok"
+                value={tiktok}
+                onChange={(e) => setTikTok(e.target.value)}
+                placeholder="@tu_usuario"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="website" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" /> Sitio web
+              </Label>
+              <Input
+                id="website"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="https://tusitio.com"
               />
             </div>
           </div>
@@ -286,35 +346,6 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
                   {category}
                 </Label>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Redes sociales de Gaby */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-display">Sígueme</CardTitle>
-          <p className="text-sm text-muted-foreground">Conoce más de Gaby en sus redes sociales</p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {socialLinks.map((social) => (
-              <a
-                key={social.name}
-                href={social.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-3 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors"
-              >
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  {social.icon}
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{social.name}</p>
-                  <p className="text-xs text-muted-foreground">{social.handle}</p>
-                </div>
-              </a>
             ))}
           </div>
         </CardContent>
