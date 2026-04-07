@@ -1,49 +1,35 @@
-import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import HeroSection from "@/components/landing/HeroSection";
-import FreeContentSection from "@/components/landing/FreeContentSection";
-import PaidClassesSection from "@/components/landing/PaidClassesSection";
-import CompatibilitySection from "@/components/landing/CompatibilitySection";
-import TestimonialsSection from "@/components/landing/TestimonialsSection";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
-const Index = () => {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const handleFocus = () => {
-      queryClient.invalidateQueries({ queryKey: ["classes"] });
-      queryClient.invalidateQueries({ queryKey: ["public-materials"] });
-    };
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, [queryClient]);
+const Header = () => {
+  const { user } = useAuth();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <HeroSection />
-      <FreeContentSection />
-      <PaidClassesSection />
-      <CompatibilitySection />
-      <TestimonialsSection />
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b">
+      <div className="container flex items-center justify-between h-16 px-4">
+        <Link to="/" className="flex items-center">
+          <span className="font-bold text-xl">Gaby Bernal</span>
+          <span className="text-xs text-muted-foreground ml-1">en tu Cocina</span>
+        </Link>
 
-      {/* NUEVA SECCIÓN "SOBRE GABY" */}
-      <section id="sobre-gaby" className="py-16 bg-muted/30">
-        <div className="container px-4 text-center max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold text-foreground mb-4">Sobre Gaby Bernal</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Gaby es una apasionada de la cocina y experta en Thermomix. Con más de 10 años de experiencia,
-            comparte sus recetas y trucos para que cocinar sea un placer. Su misión es ayudar a las personas
-            a disfrutar de la cocina casera, saludable y deliciosa, aprovechando al máximo su Thermomix.
-          </p>
+        <nav className="hidden md:flex items-center gap-6">
+          <Link to="/" className="text-sm font-medium hover:text-primary">Inicio</Link>
+          <Link to="/clases" className="text-sm font-medium hover:text-primary">Clases</Link>
+          <Link to="/herramientas/calculadora-panadero" className="text-sm font-medium hover:text-primary">Calculadora</Link>
+          <a href="#sobre-gaby" className="text-sm font-medium hover:text-primary">Sobre Gaby</a>
+          {user && <Link to="/mi-perfil" className="text-sm font-medium hover:text-primary">Mi Perfil</Link>}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          {!user && (
+            <Link to="/auth" className="text-sm font-medium hover:text-primary">
+              Iniciar Sesión
+            </Link>
+          )}
         </div>
-      </section>
-      
-      <Footer />
-    </div>
+      </div>
+    </header>
   );
 };
 
-export default Index;
+export default Header;
