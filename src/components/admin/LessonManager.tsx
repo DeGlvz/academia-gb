@@ -7,14 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -39,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, GripVertical, FileText, Video, Code } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, FileText, Video, Code, X, Upload } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -56,7 +48,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { SortableItem } from "@/components/ui/sortable-item";
-import { PdfUpload } from "@/components/ui/image-upload";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 interface LessonManagerProps {
   classId: string;
@@ -71,6 +63,9 @@ interface Lesson {
   content_url?: string;
   material_url?: string;
   lesson_type?: string;
+  pdf_files?: any[];
+  video_thumbnail?: string;
+  video_duration?: string;
 }
 
 const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
@@ -87,6 +82,11 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
   const [contentUrl, setContentUrl] = useState("");
   const [materialUrl, setMaterialUrl] = useState("");
   const [lessonType, setLessonType] = useState("video");
+  const [htmlContent, setHtmlContent] = useState("");
+  const [pdfFiles, setPdfFiles] = useState<any[]>([]);
+  const [videoThumbnail, setVideoThumbnail] = useState("");
+  const [videoDuration, setVideoDuration] = useState("");
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -109,13 +109,7 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { 
-      title: string; 
-      description: string; 
-      content_url?: string; 
-      material_url?: string;
-      lesson_type: string;
-    }) => {
+    mutationFn: async (data: any) => {
       const order_index = lessons.length;
       const { error } = await supabase.from("lessons").insert([
         {
@@ -139,14 +133,7 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: { 
-      id: string; 
-      title: string; 
-      description: string; 
-      content_url?: string; 
-      material_url?: string;
-      lesson_type: string;
-    }) => {
+    mutationFn: async (data: any) => {
       const { error } = await supabase
         .from("lessons")
         .update({ 
@@ -217,6 +204,7 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
     setContentUrl(lesson.content_url || "");
     setMaterialUrl(lesson.material_url || "");
     setLessonType(lesson.lesson_type || "video");
+    setHtmlContent(lesson.content_url || "");
     setDialogOpen(true);
   };
 
@@ -226,6 +214,7 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
     setContentUrl("");
     setMaterialUrl("");
     setLessonType("video");
+    setHtmlContent("");
     setEditingLesson(null);
   };
 
@@ -235,10 +224,15 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
       return;
     }
     
+    let contentToSave = contentUrl;
+    if (lessonType === "text") {
+      contentToSave = htmlContent;
+    }
+    
     const data = {
       title,
       description,
-      content_url: contentUrl || null,
+      content_url: contentToSave || null,
       material_url: materialUrl || null,
       lesson_type: lessonType,
     };
@@ -250,11 +244,50 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
     }
   };
 
+  const insertHtmlTag = (tag: string) => {
+    const textarea = document.querySelector("#html-content") as HTMLTextAreaElement;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = htmlContent;
+      let newText = "";
+      
+      switch (tag) {
+        case "bold":
+          newText = text.substring(0, start) + "<strong>" + text.substring(start, end) + "</strong>" + text.substring(end);
+          break;
+        case "italic":
+          newText = text.substring(0, start) + "<em>" + text.substring(start, end) + "</em>" + text.substring(end);
+          break;
+        case "h1":
+          newText = text.substring(0, start) + "<h1>" + text.substring(start, end) + "</h1>" + text.substring(end);
+          break;
+        case "h2":
+          newText = text.substring(0, start) + "<h2>" + text.substring(start, end) + "</h2>" + text.substring(end);
+          break;
+        case "ul":
+          newText = text.substring(0, start) + "<ul>\n  <li>" + text.substring(start, end) + "</li>\n</ul>" + text.substring(end);
+          break;
+        case "ol":
+          newText = text.substring(0, start) + "<ol>\n  <li>" + text.substring(start, end) + "</li>\n</ol>" + text.substring(end);
+          break;
+        case "p":
+          newText = text.substring(0, start) + "<p>" + text.substring(start, end) + "</p>" + text.substring(end);
+          break;
+        default:
+          return;
+      }
+      
+      setHtmlContent(newText);
+    }
+  };
+
   const getLessonTypeIcon = (type?: string) => {
     switch (type) {
       case "video": return <Video className="h-4 w-4" />;
       case "pdf": return <FileText className="h-4 w-4" />;
-      default: return <Code className="h-4 w-4" />;
+      case "text": return <Code className="h-4 w-4" />;
+      default: return <Video className="h-4 w-4" />;
     }
   };
 
@@ -297,35 +330,80 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
 
               <div className="space-y-2">
                 <Label>Descripción (opcional)</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Descripción de la lección" />
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Breve descripción de la lección" />
               </div>
 
-              {/* URL del contenido (video o texto) */}
-              {(lessonType === "video" || lessonType === "text") && (
-                <div className="space-y-2">
-                  <Label>{lessonType === "video" ? "URL del video (YouTube/Vimeo)" : "URL del contenido (opcional)"}</Label>
-                  <Input 
-                    value={contentUrl} 
-                    onChange={(e) => setContentUrl(e.target.value)} 
-                    placeholder={lessonType === "video" ? "https://youtube.com/watch?v=..." : "https://..."} 
-                  />
-                  {lessonType === "video" && (
+              {/* Tipo VIDEO */}
+              {lessonType === "video" && (
+                <>
+                  <div className="space-y-2">
+                    <Label>URL del video (YouTube/Vimeo)</Label>
+                    <Input 
+                      value={contentUrl} 
+                      onChange={(e) => setContentUrl(e.target.value)} 
+                      placeholder="https://youtube.com/watch?v=... o https://vimeo.com/..." 
+                    />
                     <p className="text-xs text-muted-foreground">
                       Puedes usar enlaces de YouTube, Vimeo o cualquier video embebido.
                     </p>
-                  )}
-                </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Miniatura del video (opcional)</Label>
+                    <ImageUpload
+                      bucket="class-images"
+                      path="videos/thumbnails"
+                      onUpload={(url) => setVideoThumbnail(url)}
+                      existingUrl={videoThumbnail}
+                    />
+                  </div>
+                </>
               )}
 
-              {/* PDF uploader */}
+              {/* Tipo PDF */}
               {lessonType === "pdf" && (
                 <div className="space-y-2">
                   <Label>Material PDF</Label>
-                  <PdfUpload
+                  <ImageUpload
+                    bucket="class-images"
+                    path="pdfs"
                     onUpload={(url) => setMaterialUrl(url)}
                     existingUrl={materialUrl}
-                    label="Subir PDF"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Sube un archivo PDF. Los alumnos podrán descargarlo o verlo en línea.
+                  </p>
+                </div>
+              )}
+
+              {/* Tipo TEXTO con HTML simple */}
+              {lessonType === "text" && (
+                <div className="space-y-2">
+                  <Label>Contenido HTML</Label>
+                  
+                  {/* Toolbar simple */}
+                  <div className="flex flex-wrap gap-1 p-2 border rounded-md bg-muted/30">
+                    <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("bold")}>B</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("italic")}>I</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("h1")}>H1</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("h2")}>H2</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("p")}>P</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("ul")}>• Lista</Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("ol")}>1. Lista</Button>
+                  </div>
+                  
+                  <Textarea
+                    id="html-content"
+                    value={htmlContent}
+                    onChange={(e) => setHtmlContent(e.target.value)}
+                    rows={10}
+                    placeholder="<p>Escribe el contenido de la lección en HTML...</p>
+<p>Ejemplo: <strong>texto en negritas</strong> y <em>cursivas</em></p>
+<img src='https://ejemplo.com/imagen.jpg' alt='descripción' />"
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Puedes usar etiquetas HTML: &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;h1&gt;, &lt;h2&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;img&gt;
+                  </p>
                 </div>
               )}
 
@@ -372,9 +450,6 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
                         >
                           📄 Ver material
                         </a>
-                      )}
-                      {lesson.content_url && lesson.lesson_type === "video" && (
-                        <p className="text-xs text-muted-foreground truncate">🎬 {lesson.content_url}</p>
                       )}
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(lesson)}>
