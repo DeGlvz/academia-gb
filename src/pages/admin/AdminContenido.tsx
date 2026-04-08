@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, Star, Plus, Edit, Trash2, Eye, EyeOff, FileText, Image as ImageIcon } from "lucide-react";
+import { Save, Star, Plus, Edit, Trash2, Eye, EyeOff, FileText, Image as ImageIcon, Bold, Italic, Heading1, Heading2, List, ListOrdered } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,6 +63,9 @@ const AdminContenido = () => {
     is_published: false,
   });
 
+  // Estado para el editor HTML
+  const [htmlContent, setHtmlContent] = useState("");
+
   // Hero section state
   const [hero, setHero] = useState({
     badge: "🍳 Academia Online",
@@ -85,6 +88,46 @@ const AdminContenido = () => {
     { name: "Ana García", text: "La Calculadora Panadero Pro es una joya. Mis panes nunca habían quedado tan bien.", rating: 5 },
     { name: "Laura Martínez", text: "Contenido de primera calidad. Cada clase vale completamente la pena.", rating: 5 },
   ]);
+
+  // Función para insertar etiquetas HTML en el editor
+  const insertHtmlTag = (tag: string) => {
+    const textarea = document.querySelector("#blog-html-content") as HTMLTextAreaElement;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = htmlContent;
+      let newText = "";
+      
+      switch (tag) {
+        case "bold":
+          newText = text.substring(0, start) + "<strong>" + text.substring(start, end) + "</strong>" + text.substring(end);
+          break;
+        case "italic":
+          newText = text.substring(0, start) + "<em>" + text.substring(start, end) + "</em>" + text.substring(end);
+          break;
+        case "h1":
+          newText = text.substring(0, start) + "<h1>" + text.substring(start, end) + "</h1>" + text.substring(end);
+          break;
+        case "h2":
+          newText = text.substring(0, start) + "<h2>" + text.substring(start, end) + "</h2>" + text.substring(end);
+          break;
+        case "ul":
+          newText = text.substring(0, start) + "<ul>\n  <li>" + text.substring(start, end) + "</li>\n</ul>" + text.substring(end);
+          break;
+        case "ol":
+          newText = text.substring(0, start) + "<ol>\n  <li>" + text.substring(start, end) + "</li>\n</ol>" + text.substring(end);
+          break;
+        case "p":
+          newText = text.substring(0, start) + "<p>" + text.substring(start, end) + "</p>" + text.substring(end);
+          break;
+        default:
+          return;
+      }
+      
+      setHtmlContent(newText);
+      setFormData({ ...formData, content: newText });
+    }
+  };
 
   // Cargar posts del blog
   const loadBlogPosts = async () => {
@@ -122,7 +165,7 @@ const AdminContenido = () => {
   };
 
   const handleSavePost = async () => {
-    if (!formData.title || !formData.content) {
+    if (!formData.title || !htmlContent) {
       toast({ title: "Error", description: "Título y contenido son requeridos", variant: "destructive" });
       return;
     }
@@ -133,8 +176,8 @@ const AdminContenido = () => {
     const postData = {
       title: formData.title,
       slug,
-      excerpt: formData.excerpt || formData.content.substring(0, 150),
-      content: formData.content,
+      excerpt: formData.excerpt || htmlContent.substring(0, 150).replace(/<[^>]*>/g, ""),
+      content: htmlContent,
       featured_image: formData.featured_image || null,
       tags: tagsArray,
       read_time: formData.read_time,
@@ -143,7 +186,6 @@ const AdminContenido = () => {
 
     try {
       if (editingPost) {
-        // Actualizar
         const { error } = await supabase
           .from("blog_posts")
           .update({ ...postData, updated_at: new Date().toISOString() })
@@ -152,7 +194,6 @@ const AdminContenido = () => {
         if (error) throw error;
         toast({ title: "Artículo actualizado", description: `"${formData.title}" se actualizó correctamente` });
       } else {
-        // Crear nuevo
         const { error } = await supabase
           .from("blog_posts")
           .insert([postData]);
@@ -214,6 +255,7 @@ const AdminContenido = () => {
       read_time: 5,
       is_published: false,
     });
+    setHtmlContent("");
   };
 
   const openEditDialog = (post: BlogPost) => {
@@ -228,6 +270,7 @@ const AdminContenido = () => {
       read_time: post.read_time || 5,
       is_published: post.is_published,
     });
+    setHtmlContent(post.content);
     setIsDialogOpen(true);
   };
 
@@ -255,9 +298,8 @@ const AdminContenido = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab: Landing */}
+        {/* Tab: Landing - igual que antes */}
         <TabsContent value="landing" className="space-y-6">
-          {/* Hero - igual que antes */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Sección Hero</CardTitle>
@@ -291,7 +333,6 @@ const AdminContenido = () => {
             </CardContent>
           </Card>
 
-          {/* CTA Banner */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Banner CTA</CardTitle>
@@ -315,7 +356,6 @@ const AdminContenido = () => {
             </CardContent>
           </Card>
 
-          {/* Testimonials */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Testimonios</CardTitle>
@@ -468,14 +508,14 @@ const AdminContenido = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Dialog para crear/editar artículo - CON UPLOADER DE IMAGEN */}
+      {/* Dialog para crear/editar artículo - CON EDITOR HTML COMPLETO */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingPost ? "Editar artículo" : "Nuevo artículo"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {/* Imagen destacada - NUEVO */}
+            {/* Imagen destacada */}
             <div className="space-y-2">
               <Label>Imagen destacada</Label>
               <ImageUpload
@@ -486,6 +526,7 @@ const AdminContenido = () => {
               />
             </div>
 
+            {/* Título */}
             <div className="space-y-2">
               <Label>Título *</Label>
               <Input
@@ -494,6 +535,8 @@ const AdminContenido = () => {
                 placeholder="Título del artículo"
               />
             </div>
+
+            {/* Slug */}
             <div className="space-y-2">
               <Label>Slug (URL)</Label>
               <div className="flex gap-2">
@@ -511,6 +554,8 @@ const AdminContenido = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Extracto */}
             <div className="space-y-2">
               <Label>Extracto (vista previa)</Label>
               <Textarea
@@ -520,15 +565,79 @@ const AdminContenido = () => {
                 rows={2}
               />
             </div>
+
+            {/* Editor HTML completo */}
             <div className="space-y-2">
-              <Label>Contenido (HTML) *</Label>
+              <Label>Contenido *</Label>
+              
+              {/* Toolbar */}
+              <div className="flex flex-wrap gap-1 p-2 border rounded-md bg-muted/30">
+                <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("bold")}>
+                  <Bold className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("italic")}>
+                  <Italic className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("h1")}>
+                  <Heading1 className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("h2")}>
+                  <Heading2 className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("p")}>
+                  P
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("ul")}>
+                  <List className="h-4 w-4" />
+                </Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("ol")}>
+                  <ListOrdered className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {/* Editor textarea */}
               <Textarea
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="<p>Contenido del artículo en HTML...</p>"
-                rows={8}
+                id="blog-html-content"
+                value={htmlContent}
+                onChange={(e) => {
+                  setHtmlContent(e.target.value);
+                  setFormData({ ...formData, content: e.target.value });
+                }}
+                rows={12}
+                placeholder="<p>Escribe el contenido del artículo en HTML...</p>
+<p>Ejemplo: <strong>texto en negritas</strong> y <em>cursivas</em></p>
+<img src='https://ejemplo.com/imagen.jpg' alt='descripción' />
+<ul>
+  <li>Punto 1</li>
+  <li>Punto 2</li>
+</ul>"
+                className="font-mono text-sm"
               />
+              
+              {/* Uploader de imágenes para el contenido */}
+              <div className="p-3 border rounded-md bg-muted/20">
+                <p className="text-sm font-medium mb-2">Insertar imagen en el contenido</p>
+                <ImageUpload
+                  bucket="class-images"
+                  path="blog/content"
+                  onUpload={(url) => {
+                    const newContent = htmlContent + `\n<img src="${url}" alt="imagen" class="rounded-lg my-2" />\n`;
+                    setHtmlContent(newContent);
+                    setFormData({ ...formData, content: newContent });
+                  }}
+                  existingUrl=""
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  La imagen se insertará al final del contenido. Luego puedes mover el código &lt;img&gt; a donde prefieras.
+                </p>
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                Puedes usar etiquetas HTML: &lt;p&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;h1&gt;, &lt;h2&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;img&gt;
+              </p>
             </div>
+
+            {/* Tags y tiempo de lectura */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tags (separados por coma)</Label>
@@ -547,6 +656,8 @@ const AdminContenido = () => {
                 />
               </div>
             </div>
+
+            {/* Publicar */}
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -557,6 +668,8 @@ const AdminContenido = () => {
               />
               <Label htmlFor="is_published" className="cursor-pointer">Publicar inmediatamente</Label>
             </div>
+
+            {/* Botones */}
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
