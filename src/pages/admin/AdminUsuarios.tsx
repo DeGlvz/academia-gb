@@ -61,7 +61,6 @@ const AdminUsuarios = () => {
   const [paymentDate, setPaymentDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Transferencia");
 
-  // Modal de perfil
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
   const [activeProfileTab, setActiveProfileTab] = useState("resumen");
@@ -72,7 +71,6 @@ const AdminUsuarios = () => {
   const [crmNotes, setCrmNotes] = useState<any[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
-  // Cargar usuarios reales desde Supabase
   const loadUsers = async () => {
     setIsLoading(true);
     try {
@@ -159,7 +157,6 @@ const AdminUsuarios = () => {
     }
   };
 
-  // Cargar notas CRM
   const loadCrmNotes = async (userId: string) => {
     setLoadingNotes(true);
     try {
@@ -391,7 +388,6 @@ const AdminUsuarios = () => {
         <p className="text-muted-foreground text-sm mt-1">{users.length} alumnos registrados</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { value: users.length, label: "Total", icon: User },
@@ -410,7 +406,6 @@ const AdminUsuarios = () => {
         ))}
       </div>
 
-      {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -473,7 +468,6 @@ const AdminUsuarios = () => {
 
       <p className="text-xs text-muted-foreground">{filtered.length} alumno{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}</p>
 
-      {/* Tabla de usuarios */}
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -515,7 +509,7 @@ const AdminUsuarios = () => {
                                   <Info className="h-3 w-3 text-muted-foreground" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p className="text-xs">Haz clic para ver perfil completo<br/>con métricas y seguimiento CRM</p>
+                                  <p className="text-xs">Haz clic para ver perfil completo</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
@@ -559,18 +553,10 @@ const AdminUsuarios = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "activo")}>
-                            🟢 Activo
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "inactivo")}>
-                            ⚪ Inactivo
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "suspendido")}>
-                            🔴 Suspendido
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "pendiente")}>
-                            🟡 Pendiente
-                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "activo")}>🟢 Activo</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "inactivo")}>⚪ Inactivo</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "suspendido")}>🔴 Suspendido</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "pendiente")}>🟡 Pendiente</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -609,7 +595,6 @@ const AdminUsuarios = () => {
         </CardContent>
       </Card>
 
-      {/* Dialog: Asignar accesos */}
       <Dialog open={!!accessUser} onOpenChange={(open) => !open && setAccessUser(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -638,7 +623,7 @@ const AdminUsuarios = () => {
                 <SelectContent>
                   <SelectItem value="Transferencia">Transferencia bancaria</SelectItem>
                   <SelectItem value="Efectivo">Efectivo</SelectItem>
-                  <SelectItem value="Tarjeta">Tarjeta de crédito/débito</SelectItem>
+                  <SelectItem value="Tarjeta">Tarjeta</SelectItem>
                   <SelectItem value="PayPal">PayPal</SelectItem>
                 </SelectContent>
               </Select>
@@ -666,7 +651,6 @@ const AdminUsuarios = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal: Perfil completo del alumno (CRM) */}
       <Dialog open={profileModalOpen} onOpenChange={setProfileModalOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           {selectedUser && (
@@ -685,7 +669,6 @@ const AdminUsuarios = () => {
                 </DialogTitle>
               </DialogHeader>
 
-              {/* Métricas rápidas */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div className="text-center p-2 bg-muted/30 rounded-lg">
                   <p className="text-xs text-muted-foreground">Volumen</p>
@@ -716,7 +699,6 @@ const AdminUsuarios = () => {
                   <TabsTrigger value="crm">📝 CRM</TabsTrigger>
                 </TabsList>
 
-                {/* Tab Resumen */}
                 <TabsContent value="resumen" className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="border rounded-lg p-3">
@@ -725,9 +707,6 @@ const AdminUsuarios = () => {
                       <p className="text-xs mt-1">{selectedUser.lesson_progress}% completado</p>
                     </div>
                     <div className="border rounded-lg p-3">
-                      <p className="text-xs text-muted-foreground">Preferencias</p>
-
-                                          <div className="border rounded-lg p-3">
                       <p className="text-xs text-muted-foreground">Preferencias</p>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {selectedUser.food_preferences.length > 0 ? (
@@ -738,7 +717,6 @@ const AdminUsuarios = () => {
                       </div>
                     </div>
                   </div>
-
                   <div className="border rounded-lg p-3">
                     <p className="text-xs text-muted-foreground">Rol y Estado</p>
                     <div className="flex gap-2 mt-2">
@@ -760,7 +738,6 @@ const AdminUsuarios = () => {
                   </div>
                 </TabsContent>
 
-                {/* Tab Clases */}
                 <TabsContent value="clases">
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {selectedUser.enrolled_classes.length === 0 ? (
@@ -773,9 +750,7 @@ const AdminUsuarios = () => {
                             <p className="text-xs text-muted-foreground">{enrollment.classes?.category}</p>
                           </div>
                           <Button variant="outline" size="sm" asChild>
-                            <a href={`/clases/${enrollment.classes?.slug}`} target="_blank" rel="noopener noreferrer">
-                              Ver clase
-                            </a>
+                            <a href={`/clases/${enrollment.classes?.slug}`} target="_blank" rel="noopener noreferrer">Ver clase</a>
                           </Button>
                         </div>
                       ))
@@ -783,18 +758,14 @@ const AdminUsuarios = () => {
                   </div>
                 </TabsContent>
 
-                {/* Tab CRM */}
                 <TabsContent value="crm" className="space-y-4">
-                  {/* Agregar nota */}
                   <div className="border rounded-lg p-4 space-y-3">
                     <p className="text-sm font-semibold">Agregar nota de seguimiento</p>
                     <div className="grid grid-cols-3 gap-3">
                       <div>
                         <Label className="text-xs">Potencial</Label>
                         <Select value={notePotential} onValueChange={setNotePotential}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="alto">🔥 Alto potencial</SelectItem>
                             <SelectItem value="medio">🟡 Medio potencial</SelectItem>
@@ -805,15 +776,12 @@ const AdminUsuarios = () => {
                       <div>
                         <Label className="text-xs">Próxima acción</Label>
                         <Select value={noteNextAction} onValueChange={setNoteNextAction}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="whatsapp">📱 Enviar WhatsApp</SelectItem>
                             <SelectItem value="email">📧 Enviar email</SelectItem>
                             <SelectItem value="llamada">📞 Llamada</SelectItem>
                             <SelectItem value="descuento">🎁 Ofrecer descuento</SelectItem>
-                            <SelectItem value="reunion">🤝 Reunión</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -822,19 +790,10 @@ const AdminUsuarios = () => {
                         <Input type="date" value={noteNextDate} onChange={(e) => setNoteNextDate(e.target.value)} className="h-8 text-xs" />
                       </div>
                     </div>
-                    <Textarea
-                      placeholder="Escribe la nota de seguimiento..."
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      rows={2}
-                      className="text-sm"
-                    />
-                    <Button size="sm" onClick={saveCrmNote} disabled={!newNote.trim()}>
-                      Guardar nota
-                    </Button>
+                    <Textarea placeholder="Escribe la nota..." value={newNote} onChange={(e) => setNewNote(e.target.value)} rows={2} className="text-sm" />
+                    <Button size="sm" onClick={saveCrmNote} disabled={!newNote.trim()}>Guardar nota</Button>
                   </div>
 
-                  {/* Lista de notas existentes */}
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">Historial de notas</p>
                     {loadingNotes ? (
@@ -856,17 +815,10 @@ const AdminUsuarios = () => {
                                 {note.next_action === "email" && "📧 Email"}
                                 {note.next_action === "llamada" && "📞 Llamada"}
                                 {note.next_action === "descuento" && "🎁 Descuento"}
-                                {note.next_action === "reunion" && "🤝 Reunión"}
                               </Badge>
-                              {note.next_action_date && (
-                                <span className="text-xs text-muted-foreground">
-                                  📅 {new Date(note.next_action_date).toLocaleDateString("es-MX")}
-                                </span>
-                              )}
+                              {note.next_action_date && <span className="text-xs text-muted-foreground">📅 {new Date(note.next_action_date).toLocaleDateString("es-MX")}</span>}
                             </div>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(note.created_at).toLocaleDateString("es-MX")}
-                            </span>
+                            <span className="text-xs text-muted-foreground">{new Date(note.created_at).toLocaleDateString("es-MX")}</span>
                           </div>
                           <p className="text-sm">{note.note}</p>
                           <div className="flex items-center gap-2 mt-2">
@@ -882,9 +834,7 @@ const AdminUsuarios = () => {
               </Tabs>
 
               <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cerrar</Button>
-                </DialogClose>
+                <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
               </DialogFooter>
             </>
           )}
@@ -895,4 +845,3 @@ const AdminUsuarios = () => {
 };
 
 export default AdminUsuarios;
-                      
