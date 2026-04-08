@@ -14,8 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/image-upload";
+import LessonManager from "@/components/admin/LessonManager";
 
 interface ClaseFormProps {
   initialData?: any;
@@ -38,7 +40,8 @@ const ClaseForm = ({ initialData, onSuccess }: ClaseFormProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [imageUrl, setImageUrl] = useState(initialData?.image_url || "");
-  const [isUploading, setIsUploading] = useState(false);
+  const [activeTab, setActiveTab] = useState("datos");
+  const [classId, setClassId] = useState<string | null>(initialData?.id || null);
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     defaultValues: {
@@ -52,6 +55,7 @@ const ClaseForm = ({ initialData, onSuccess }: ClaseFormProps) => {
   });
 
   const watchTitle = watch("title");
+  const watchIsPublished = watch("is_published");
 
   // Generar slug automáticamente desde el título
   useEffect(() => {
@@ -73,23 +77,45 @@ const ClaseForm = ({ initialData, onSuccess }: ClaseFormProps) => {
         price: parseFloat(data.price),
       };
 
+      let id = classId;
+
       if (initialData?.id) {
+        // Actualizar clase existente
         const { error } = await supabase
           .from("classes")
           .update(claseData)
           .eq("id", initialData.id);
         if (error) throw error;
+        id = initialData.id;
       } else {
-        const { error } = await supabase
+        // Crear nueva clase
+        const { data: newClass, error } = await supabase
           .from("classes")
-          .insert([claseData]);
+          .insert([claseData])
+          .select()
+          .single();
         if (error) throw error;
+        id = newClass.id;
+        setClassId(id);
       }
+
+      return { id };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["admin-clases"] });
-      toast({ title: "Clase guardada", description: "La clase ha sido guardada correctamente." });
-      onSuccess();
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
+      
+      if (!initialData && result.id) {
+        setClassId(result.id);
+        toast({ 
+          title: "Clase creada", 
+          description: "Ahora puedes agregar lecciones en la pestaña de Lecciones." 
+        });
+        setActiveTab("lecciones");
+      } else {
+        toast({ title: "Clase guardada", description: "La clase ha sido guardada correctamente." });
+        onSuccess();
+      }
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -106,69 +132,120 @@ const ClaseForm = ({ initialData, onSuccess }: ClaseFormProps) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Título *</Label>
-        <Input id="title" {...register("title", { required: "El título es requerido" })} />
-        {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="datos">📝 Datos de la clase</TabsTrigger>
+          <TabsTrigger value="lecciones" disabled={!classId && !initialData?.id}>
+            📚 Lecciones {classId && "(agregar / editar)"}
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="space-y-2">
-        <Label htmlFor="slug">Slug (URL amigable)</Label>
-        <Input id="slug" {...register("slug")} />
-        <p className="text-xs text-muted-foreground">Ej: pan-artesanal-desde-cero</p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="category">Categoría *</Label>
-        <Select onValueChange={(value) => setValue("category", value)} defaultValue={initialData?.category}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecciona una categoría" />
-          </SelectTrigger>
-          <SelectContent>
-            {CATEGORIES.map((cat) => (
-              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Descripción</Label>
-        <Textarea id="description" rows={4} {...register("description")} />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Imagen principal</Label>
-        <ImageUpload
-          bucket="class-images"
-          path="clases"
-          onUpload={(url) => setImageUrl(url)}
-          existingUrl={imageUrl}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="price">Precio (MXN)</Label>
-          <Input id="price" type="number" step="0.01" {...register("price")} />
-          <p className="text-xs text-muted-foreground">0 = Gratis</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="is_published">Publicado</Label>
-          <div className="flex items-center space-x-2 pt-2">
-            <Switch id="is_published" onCheckedChange={(checked) => setValue("is_published", checked)} defaultChecked={initialData?.is_published} />
-            <Label htmlFor="is_published">{watch("is_published") ? "Visible en el sitio" : "Borrador (no visible)"}</Label>
+        {/* Pestaña: Datos de la clase */}
+        <TabsContent value="datos" className="space-y-4 pt-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Título *</Label>
+            <Input id="title" {...register("title", { required: "El título es requerido" })} />
+            {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
           </div>
-        </div>
-      </div>
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onSuccess}>Cancelar</Button>
-        <Button type="submit" disabled={mutation.isPending}>
-          {mutation.isPending ? "Guardando..." : "Guardar clase"}
-        </Button>
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="slug">Slug (URL amigable)</Label>
+            <Input id="slug" {...register("slug")} />
+            <p className="text-xs text-muted-foreground">Ej: pan-artesanal-desde-cero</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Categoría *</Label>
+            <Select onValueChange={(value) => setValue("category", value)} defaultValue={initialData?.category}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona una categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Descripción</Label>
+            <Textarea id="description" rows={4} {...register("description")} />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Imagen principal</Label>
+            <ImageUpload
+              bucket="class-images"
+              path="clases"
+              onUpload={(url) => setImageUrl(url)}
+              existingUrl={imageUrl}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="price">Precio (MXN)</Label>
+              <Input id="price" type="number" step="0.01" {...register("price")} />
+              <p className="text-xs text-muted-foreground">0 = Gratis</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="is_published">Publicado</Label>
+              <div className="flex items-center space-x-2 pt-2">
+                <Switch id="is_published" onCheckedChange={(checked) => setValue("is_published", checked)} defaultChecked={initialData?.is_published} />
+                <Label htmlFor="is_published">{watchIsPublished ? "Visible en el sitio" : "Borrador (no visible)"}</Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={onSuccess}>Cancelar</Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? "Guardando..." : initialData ? "Guardar cambios" : "Crear clase y continuar"}
+            </Button>
+          </div>
+        </TabsContent>
+
+        {/* Pestaña: Lecciones */}
+        <TabsContent value="lecciones" className="space-y-4 pt-4">
+          {(classId || initialData?.id) ? (
+            <>
+              <div className="bg-muted/30 p-3 rounded-lg mb-4">
+                <p className="text-sm text-muted-foreground">
+                  📌 Las lecciones se guardan automáticamente. Puedes ordenarlas arrastrando.
+                </p>
+              </div>
+              <LessonManager
+                classId={classId || initialData?.id}
+                onSuccess={() => {
+                  queryClient.invalidateQueries({ queryKey: ["admin-clases"] });
+                }}
+              />
+            </>
+          ) : (
+            <div className="text-center py-12 space-y-4">
+              <p className="text-muted-foreground">
+                Primero debes guardar la clase para poder agregar lecciones.
+              </p>
+              <Button type="button" onClick={() => setActiveTab("datos")}>
+                Ir a datos de la clase
+              </Button>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={onSuccess}>
+              Cerrar
+            </Button>
+            {classId && (
+              <Button type="button" onClick={() => onSuccess()}>
+                Terminar
+              </Button>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </form>
   );
 };
