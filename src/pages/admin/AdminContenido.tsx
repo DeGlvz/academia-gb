@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, Star, Plus, Edit, Trash2, Eye, EyeOff, FileText } from "lucide-react";
+import { Save, Star, Plus, Edit, Trash2, Eye, EyeOff, FileText, Image as ImageIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -27,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 // Tipo para posts del blog
 interface BlogPost {
@@ -35,6 +35,7 @@ interface BlogPost {
   slug: string;
   excerpt: string;
   content: string;
+  featured_image?: string;
   tags: string[];
   read_time: number;
   is_published: boolean;
@@ -56,6 +57,7 @@ const AdminContenido = () => {
     slug: "",
     excerpt: "",
     content: "",
+    featured_image: "",
     tags: "",
     read_time: 5,
     is_published: false,
@@ -133,6 +135,7 @@ const AdminContenido = () => {
       slug,
       excerpt: formData.excerpt || formData.content.substring(0, 150),
       content: formData.content,
+      featured_image: formData.featured_image || null,
       tags: tagsArray,
       read_time: formData.read_time,
       is_published: formData.is_published,
@@ -206,6 +209,7 @@ const AdminContenido = () => {
       slug: "",
       excerpt: "",
       content: "",
+      featured_image: "",
       tags: "",
       read_time: 5,
       is_published: false,
@@ -219,6 +223,7 @@ const AdminContenido = () => {
       slug: post.slug,
       excerpt: post.excerpt || "",
       content: post.content,
+      featured_image: post.featured_image || "",
       tags: post.tags?.join(", ") || "",
       read_time: post.read_time || 5,
       is_published: post.is_published,
@@ -252,7 +257,7 @@ const AdminContenido = () => {
 
         {/* Tab: Landing */}
         <TabsContent value="landing" className="space-y-6">
-          {/* Hero */}
+          {/* Hero - igual que antes */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Sección Hero</CardTitle>
@@ -388,18 +393,32 @@ const AdminContenido = () => {
                 <div className="space-y-3">
                   {blogPosts.map((post) => (
                     <div key={post.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium truncate">{post.title}</p>
-                          {post.is_published ? (
-                            <Badge variant="default" className="text-xs">Publicado</Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">Borrador</Badge>
-                          )}
+                      <div className="flex-1 min-w-0 flex items-center gap-3">
+                        {post.featured_image && (
+                          <img 
+                            src={post.featured_image} 
+                            alt={post.title} 
+                            className="h-12 w-12 rounded object-cover shrink-0"
+                          />
+                        )}
+                        {!post.featured_image && (
+                          <div className="h-12 w-12 rounded bg-muted flex items-center justify-center shrink-0">
+                            <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium truncate">{post.title}</p>
+                            {post.is_published ? (
+                              <Badge variant="default" className="text-xs">Publicado</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">Borrador</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(post.created_at).toLocaleDateString("es-MX")} · {post.read_time || 5} min lectura
+                          </p>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(post.created_at).toLocaleDateString("es-MX")} · {post.read_time || 5} min lectura
-                        </p>
                       </div>
                       <div className="flex items-center gap-1">
                         <Button
@@ -449,13 +468,24 @@ const AdminContenido = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Dialog para crear/editar artículo */}
+      {/* Dialog para crear/editar artículo - CON UPLOADER DE IMAGEN */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingPost ? "Editar artículo" : "Nuevo artículo"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* Imagen destacada - NUEVO */}
+            <div className="space-y-2">
+              <Label>Imagen destacada</Label>
+              <ImageUpload
+                bucket="class-images"
+                path="blog"
+                onUpload={(url) => setFormData({ ...formData, featured_image: url })}
+                existingUrl={formData.featured_image}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label>Título *</Label>
               <Input
