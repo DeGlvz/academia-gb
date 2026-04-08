@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Play, Lock, Clock, BookOpen, ShoppingCart, CheckCircle, User, Check } from "lucide-react";
+import { ArrowLeft, Play, Lock, Clock, BookOpen, ShoppingCart, CheckCircle, User, Check, FileText, Video, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,13 @@ import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { recordPurchaseAttempt } from "@/lib/purchaseAttempts";
 import { Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const ClaseDetalle = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -66,6 +73,111 @@ const ClaseDetalle = () => {
 
   const totalLessons = classData.lessons.length;
   const compatibleModels = classData.compatible_models || [];
+
+  // Función para obtener el icono según tipo de lección
+  const getLessonIcon = (lessonType?: string) => {
+    switch (lessonType) {
+      case "video":
+        return <Video className="h-4 w-4" />;
+      case "pdf":
+        return <FileText className="h-4 w-4" />;
+      case "text":
+        return <Code className="h-4 w-4" />;
+      default:
+        return <Play className="h-4 w-4" />;
+    }
+  };
+
+  // Función para renderizar el contenido de la lección según tipo
+  const renderLessonContent = (lesson: any) => {
+    if (!isEnrolled && !lesson.is_free) {
+      return (
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Lock className="h-4 w-4" />
+          <span className="text-sm">Desbloquea la clase para acceder</span>
+        </div>
+      );
+    }
+
+    switch (lesson.lesson_type) {
+      case "video":
+        if (lesson.content_url) {
+          // Detectar si es YouTube, Vimeo o video directo
+          const isYouTube = lesson.content_url.includes("youtube.com") || lesson.content_url.includes("youtu.be");
+          const isVimeo = lesson.content_url.includes("vimeo.com");
+          
+          let embedUrl = lesson.content_url;
+          if (isYouTube) {
+            const videoId = lesson.content_url.split("v=")[1]?.split("&")[0] || lesson.content_url.split("/").pop();
+            embedUrl = `https://www.youtube.com/embed/${videoId}`;
+          } else if (isVimeo) {
+            const videoId = lesson.content_url.split("/").pop();
+            embedUrl = `https://player.vimeo.com/video/${videoId}`;
+          }
+          
+          return (
+            <div className="space-y-2">
+              <div className="aspect-video rounded-lg overflow-hidden bg-black">
+                <iframe
+                  src={embedUrl}
+                  title={lesson.title}
+                  className="w-full h-full"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                />
+              </div>
+              {lesson.video_thumbnail && (
+                <p className="text-xs text-muted-foreground">Miniatura: {lesson.video_thumbnail}</p>
+              )}
+            </div>
+          );
+        }
+        return <p className="text-muted-foreground">No hay URL de video configurada</p>;
+
+      case "pdf":
+        if (lesson.material_url) {
+          return (
+            <div className="space-y-3">
+              <Button asChild variant="default" className="gap-2">
+                <a href={lesson.material_url} target="_blank" rel="noopener noreferrer">
+                  <FileText className="h-4 w-4" />
+                  Abrir PDF
+                </a>
+              </Button>
+              <Button asChild variant="outline" className="gap-2">
+                <a href={lesson.material_url} download>
+                  Descargar PDF
+                </a>
+              </Button>
+            </div>
+          );
+        }
+        return <p className="text-muted-foreground">No hay PDF disponible</p>;
+
+      case "text":
+        return (
+          <div 
+            className="prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: lesson.content_url || "<p>Contenido no disponible</p>" }}
+          />
+        );
+
+      default:
+        // Fallback para lecciones sin tipo específico
+        return (
+          <div className="space-y-2">
+            <p className="text-muted-foreground">{lesson.description || "Contenido de la lección"}</p>
+            {lesson.content_url && (
+              <Button asChild variant="outline" size="sm">
+                <a href={lesson.content_url} target="_blank" rel="noopener noreferrer">
+                  Ver contenido
+                </a>
+              </Button>
+            )}
+          </div>
+        );
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -143,31 +255,57 @@ const ClaseDetalle = () => {
                   {classData.lessons.map((lesson, index) => {
                     const canAccess = isEnrolled || lesson.is_free;
                     return (
-                      <Card key={lesson.id} className={`transition-colors ${canAccess ? "hover:border-primary/40 cursor-pointer" : "opacity-60"}`}>
-                        <CardContent className="p-4 flex items-center gap-4">
-                          <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${canAccess ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
-                            {index + 1}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className={`text-sm font-medium truncate ${canAccess ? "text-foreground" : "text-muted-foreground"}`}>{lesson.title}</p>
-                              {lesson.is_free && !isEnrolled && (
-                                <Badge variant="outline" className="text-[10px] shrink-0 font-body border-primary text-primary">Gratis</Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">{lesson.duration}</p>
-                          </div>
-                          <div className="shrink-0">
-                            {canAccess ? (
-                              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                <Play className="h-3.5 w-3.5 text-primary ml-0.5" />
+                      <Dialog key={lesson.id}>
+                        <DialogTrigger asChild>
+                          <Card className={`transition-colors ${canAccess ? "hover:border-primary/40 cursor-pointer" : "opacity-60"}`}>
+                            <CardContent className="p-4 flex items-center gap-4">
+                              <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${canAccess ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                                {index + 1}
                               </div>
-                            ) : (
-                              <Lock className="h-4 w-4 text-muted-foreground" />
+                              <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+                                {getLessonIcon(lesson.lesson_type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className={`text-sm font-medium truncate ${canAccess ? "text-foreground" : "text-muted-foreground"}`}>{lesson.title}</p>
+                                  {lesson.is_free && !isEnrolled && (
+                                    <Badge variant="outline" className="text-[10px] shrink-0 font-body border-primary text-primary">Gratis</Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {lesson.lesson_type === "video" && "📹 Video"}
+                                  {lesson.lesson_type === "pdf" && "📄 Material PDF"}
+                                  {lesson.lesson_type === "text" && "📝 Texto / HTML"}
+                                  {!lesson.lesson_type && "📚 Contenido"}
+                                </p>
+                              </div>
+                              <div className="shrink-0">
+                                {canAccess ? (
+                                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <Play className="h-3.5 w-3.5 text-primary ml-0.5" />
+                                  </div>
+                                ) : (
+                                  <Lock className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                              {getLessonIcon(lesson.lesson_type)}
+                              {lesson.title}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            {lesson.description && (
+                              <p className="text-muted-foreground">{lesson.description}</p>
                             )}
+                            {renderLessonContent(lesson)}
                           </div>
-                        </CardContent>
-                      </Card>
+                        </DialogContent>
+                      </Dialog>
                     );
                   })}
                 </div>
@@ -220,9 +358,9 @@ const ClaseDetalle = () => {
                     <div className="space-y-3 text-sm">
                       <h3 className="font-semibold text-foreground">Incluye:</h3>
                       <ul className="space-y-2 text-muted-foreground">
-                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary shrink-0" />{totalLessons} lecciones en video</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary shrink-0" />{totalLessons} lecciones</li>
                         <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary shrink-0" />Acceso de por vida</li>
-                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary shrink-0" />Recetas descargables</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary shrink-0" />Material descargable</li>
                         <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-primary shrink-0" />Compatible con {compatibleModels.join(", ")}</li>
                       </ul>
                     </div>
