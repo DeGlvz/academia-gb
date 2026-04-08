@@ -352,7 +352,10 @@ const AdminUsuarios = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-foreground">{u.full_name}</p>
+                          <p className="font-medium <Link to={`/admin/usuarios/${u.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+                            {u.full_name}
+                          </Link>
+                        text-foreground">{u.full_name}</p>
                           <p className="text-xs text-muted-foreground">{u.email}</p>
                         </div>
                       </div>
