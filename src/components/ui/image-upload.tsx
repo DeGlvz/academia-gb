@@ -1,54 +1,29 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { Upload, X, Loader2 } from "lucide-react";
+import { X, Image as ImageIcon } from "lucide-react";
+import { FileUploader } from "./file-uploader";
 
 interface ImageUploadProps {
-  bucket: string;
-  path: string;
+  bucket?: string;
+  path?: string;
   onUpload: (url: string) => void;
   existingUrl?: string;
 }
 
-export const ImageUpload = ({ bucket, path, onUpload, existingUrl }: ImageUploadProps) => {
-  const { toast } = useToast();
-  const [uploading, setUploading] = useState(false);
+export const ImageUpload = ({ 
+  bucket = "class-images", 
+  path = "clases", 
+  onUpload, 
+  existingUrl 
+}: ImageUploadProps) => {
   const [preview, setPreview] = useState(existingUrl || "");
 
-  const uploadImage = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Error", description: "Solo se permiten imágenes", variant: "destructive" });
-      return;
-    }
-
-    setUploading(true);
-    const fileName = `${Date.now()}-${file.name}`;
-    const filePath = `${path}/${fileName}`;
-
-    try {
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
-      setPreview(publicUrl);
-      onUpload(publicUrl);
-      toast({ title: "Imagen subida", description: "La imagen se ha subido correctamente." });
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setUploading(false);
-    }
+  const handleUploadComplete = (url: string) => {
+    setPreview(url);
+    onUpload(url);
   };
 
-  const removeImage = () => {
+  const handleRemoveImage = () => {
     setPreview("");
     onUpload("");
   };
@@ -63,27 +38,137 @@ export const ImageUpload = ({ bucket, path, onUpload, existingUrl }: ImageUpload
             variant="destructive"
             size="sm"
             className="absolute top-2 right-2 h-7 w-7 p-0"
-            onClick={removeImage}
+            onClick={handleRemoveImage}
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
       ) : (
-        <div className="border-2 border-dashed rounded-lg p-6 text-center">
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])}
-            disabled={uploading}
-            className="cursor-pointer"
-          />
-          {uploading && (
-            <div className="flex items-center justify-center gap-2 mt-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Subiendo...
-            </div>
-          )}
+        <FileUploader
+          accept="image/*"
+          folder={path}
+          bucket={bucket}
+          maxSizeMB={5}
+          buttonText="Subir imagen"
+          onUploadComplete={handleUploadComplete}
+          onUploadError={(error) => console.error(error)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Nuevo componente: PDF Uploader (para material descargable)
+export const PdfUpload = ({ 
+  onUpload, 
+  existingUrl,
+  label = "Subir PDF"
+}: { 
+  onUpload: (url: string) => void; 
+  existingUrl?: string;
+  label?: string;
+}) => {
+  const [fileUrl, setFileUrl] = useState(existingUrl || "");
+
+  const handleUploadComplete = (url: string) => {
+    setFileUrl(url);
+    onUpload(url);
+  };
+
+  const handleRemoveFile = () => {
+    setFileUrl("");
+    onUpload("");
+  };
+
+  return (
+    <div className="space-y-3">
+      {fileUrl ? (
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+          <a 
+            href={fileUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-sm text-primary hover:underline flex items-center gap-2"
+          >
+            <ImageIcon className="h-4 w-4" />
+            Ver archivo
+          </a>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleRemoveFile}
+            className="h-7 w-7 p-0 text-destructive"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
+      ) : (
+        <FileUploader
+          accept="application/pdf"
+          folder="pdfs"
+          bucket="class-images"
+          maxSizeMB={20}
+          buttonText={label}
+          onUploadComplete={handleUploadComplete}
+          onUploadError={(error) => console.error(error)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Nuevo componente: Video Uploader (para lecciones en video)
+export const VideoUpload = ({ 
+  onUpload, 
+  existingUrl,
+  label = "Subir video"
+}: { 
+  onUpload: (url: string) => void; 
+  existingUrl?: string;
+  label?: string;
+}) => {
+  const [fileUrl, setFileUrl] = useState(existingUrl || "");
+
+  const handleUploadComplete = (url: string) => {
+    setFileUrl(url);
+    onUpload(url);
+  };
+
+  const handleRemoveFile = () => {
+    setFileUrl("");
+    onUpload("");
+  };
+
+  return (
+    <div className="space-y-3">
+      {fileUrl ? (
+        <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+          <video 
+            src={fileUrl} 
+            controls 
+            className="h-20 rounded"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleRemoveFile}
+            className="h-7 w-7 p-0 text-destructive"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ) : (
+        <FileUploader
+          accept="video/*"
+          folder="videos"
+          bucket="class-images"
+          maxSizeMB={50}
+          buttonText={label}
+          onUploadComplete={handleUploadComplete}
+          onUploadError={(error) => console.error(error)}
+        />
       )}
     </div>
   );
