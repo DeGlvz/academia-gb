@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { Link } from "react-router-dom";
 import { Search, MoreHorizontal, Filter, CalendarDays, BookOpen, X, ShoppingCart, Shield, ShieldOff, CreditCard, User, Mail, Calendar, DollarSign, UtensilsCrossed, GraduationCap, TrendingUp, Info, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -18,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useClasses } from "@/hooks/useClasses";
@@ -59,62 +60,58 @@ const AdminUsuarios = () => {
   const [paymentOrderNumber, setPaymentOrderNumber] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Transferencia");
-  const [profileUser, setProfileUser] = useState<UserWithDetails | null>(null);
+
+  // Modal de perfil
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
+  const [activeProfileTab, setActiveProfileTab] = useState("resumen");
+  const [newNote, setNewNote] = useState("");
+  const [notePotential, setNotePotential] = useState("bajo");
+  const [noteNextAction, setNoteNextAction] = useState("whatsapp");
+  const [noteNextDate, setNoteNextDate] = useState("");
+  const [crmNotes, setCrmNotes] = useState<any[]>([]);
+  const [loadingNotes, setLoadingNotes] = useState(false);
 
   // Cargar usuarios reales desde Supabase
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      // Obtener perfiles de usuarios
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("*");
 
       if (profilesError) throw profilesError;
 
-      // Obtener roles de user_roles (para compatibilidad)
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("*");
 
       if (rolesError) throw rolesError;
 
-      // Obtener clases inscritas
       const { data: enrollments, error: enrollError } = await supabase
         .from("enrolled_classes")
         .select("*, classes(*)");
 
       if (enrollError) throw enrollError;
 
-      // Obtener progreso de lecciones
       const { data: lessonProgress, error: progressError } = await supabase
         .from("lesson_progress")
         .select("*");
 
       if (progressError) throw progressError;
 
-      // Obtener progreso de blog
-      const { data: blogProgress, error: blogError } = await supabase
-        .from("blog_progress")
-        .select("*");
-
-      if (blogError) throw blogError;
-
-      // Obtener total de lecciones por clase
       const { data: lessons, error: lessonsError } = await supabase
         .from("lessons")
         .select("id, class_id");
 
       if (lessonsError) throw lessonsError;
 
-      // Mapear datos
       const adminUserIds = roles?.filter(r => r.role === "admin").map(r => r.user_id) || [];
       
       const usersWithDetails: UserWithDetails[] = (profiles || []).map(profile => {
         const userEnrollments = enrollments?.filter(e => e.user_id === profile.user_id) || [];
         const enrolledClassIds = userEnrollments.map(e => e.class_id);
         
-        // Calcular progreso de lecciones
         const userProgress = lessonProgress?.filter(p => p.user_id === profile.user_id) || [];
         const totalLessonsForUser = enrolledClassIds.reduce((total, classId) => {
           const classLessons = lessons?.filter(l => l.class_id === classId) || [];
@@ -124,17 +121,11 @@ const AdminUsuarios = () => {
           ? Math.round((userProgress.length / totalLessonsForUser) * 100) 
           : 0;
         
-        // Calcular progreso de blog
-        const totalBlogPosts = 0;
-        const blogProgressPercent = 0;
-        
-        // Calcular total gastado
         const totalSpent = userEnrollments.reduce((sum, e) => {
           const classData = dbClasses.find(c => c.id === e.class_id);
           return sum + (classData?.price || 0);
         }, 0);
         
-        // Determinar rol
         let role: "admin" | "moderador" | "alumno" = "alumno";
         if (adminUserIds.includes(profile.user_id)) {
           role = "admin";
@@ -151,7 +142,7 @@ const AdminUsuarios = () => {
           total_spent: totalSpent,
           enrolled_count: userEnrollments.length,
           lesson_progress: lessonProgressPercent,
-          blog_progress: blogProgressPercent,
+          blog_progress: 0,
           role: role,
           account_status: profile.account_status || "activo",
           food_preferences: profile.food_preferences || [],
@@ -165,6 +156,25 @@ const AdminUsuarios = () => {
       toast({ title: "Error", description: "No se pudieron cargar los usuarios", variant: "destructive" });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Cargar notas CRM
+  const loadCrmNotes = async (userId: string) => {
+    setLoadingNotes(true);
+    try {
+      const { data, error } = await supabase
+        .from("crm_notes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setCrmNotes(data || []);
+    } catch (error) {
+      console.error("Error loading CRM notes:", error);
+    } finally {
+      setLoadingNotes(false);
     }
   };
 
@@ -249,13 +259,11 @@ const AdminUsuarios = () => {
 
   const updateUserRole = async (userId: string, newRole: string) => {
     try {
-      // Actualizar en profiles
       await supabase
         .from("profiles")
         .update({ role: newRole })
         .eq("user_id", userId);
       
-      // Si es admin, también actualizar user_roles
       if (newRole === "admin") {
         await supabase
           .from("user_roles")
@@ -288,6 +296,42 @@ const AdminUsuarios = () => {
     } catch (error) {
       console.error("Error updating status:", error);
       toast({ title: "Error", description: "No se pudo actualizar el estado", variant: "destructive" });
+    }
+  };
+
+  const openProfileModal = (user: UserWithDetails) => {
+    setSelectedUser(user);
+    setProfileModalOpen(true);
+    loadCrmNotes(user.id);
+    setActiveProfileTab("resumen");
+    setNewNote("");
+    setNotePotential("bajo");
+    setNoteNextAction("whatsapp");
+    setNoteNextDate("");
+  };
+
+  const saveCrmNote = async () => {
+    if (!selectedUser || !newNote.trim()) return;
+    
+    try {
+      await supabase.from("crm_notes").insert({
+        user_id: selectedUser.id,
+        potential_level: notePotential,
+        next_action: noteNextAction,
+        next_action_date: noteNextDate || null,
+        note: newNote,
+        status: "pendiente",
+      });
+      
+      toast({ title: "Nota guardada", description: "La nota de seguimiento se ha agregado" });
+      setNewNote("");
+      setNotePotential("bajo");
+      setNoteNextAction("whatsapp");
+      setNoteNextDate("");
+      loadCrmNotes(selectedUser.id);
+    } catch (error) {
+      console.error("Error saving note:", error);
+      toast({ title: "Error", description: "No se pudo guardar la nota", variant: "destructive" });
     }
   };
 
@@ -444,7 +488,7 @@ const AdminUsuarios = () => {
                   <th className="p-3 font-medium text-muted-foreground text-center">Progreso</th>
                   <th className="p-3 font-medium text-muted-foreground text-right">Total</th>
                   <th className="p-3 w-10"></th>
-                 </tr>
+                </tr>
               </thead>
               <tbody>
                 {filtered.map((u) => (
@@ -458,12 +502,13 @@ const AdminUsuarios = () => {
                         </Avatar>
                         <div>
                           <div className="flex items-center gap-1">
-                            <Link 
-                              to={`/admin/usuarios/${u.id}`} 
-                              className="font-medium text-foreground hover:text-primary hover:underline"
+                            <Button 
+                              variant="link" 
+                              className="font-medium p-0 h-auto text-foreground hover:text-primary"
+                              onClick={() => openProfileModal(u)}
                             >
                               {u.full_name}
-                            </Link>
+                            </Button>
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger>
@@ -478,7 +523,7 @@ const AdminUsuarios = () => {
                           <p className="text-xs text-muted-foreground">{u.email}</p>
                         </div>
                       </div>
-                     </td>
+                    </td>
                     <td className="p-3 text-muted-foreground text-xs">{u.created_at}</td>
                     <td className="p-3">
                       <DropdownMenu>
@@ -550,10 +595,8 @@ const AdminUsuarios = () => {
                           <DropdownMenuItem onClick={() => openAccessDialog(u)}>
                             <BookOpen className="h-3.5 w-3.5 mr-2" /> Asignar accesos
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to={`/admin/usuarios/${u.id}`}>
-                              <User className="h-3.5 w-3.5 mr-2" /> Ver perfil completo
-                            </Link>
+                          <DropdownMenuItem onClick={() => openProfileModal(u)}>
+                            <User className="h-3.5 w-3.5 mr-2" /> Ver perfil completo
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -622,8 +665,234 @@ const AdminUsuarios = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal: Perfil completo del alumno (CRM) */}
+      <Dialog open={profileModalOpen} onOpenChange={setProfileModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          {selectedUser && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {selectedUser.full_name.split(" ").map((n) => n[0]).join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div>{selectedUser.full_name}</div>
+                    <DialogDescription>{selectedUser.email}</DialogDescription>
+                  </div>
+                </DialogTitle>
+              </DialogHeader>
+
+              {/* Métricas rápidas */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="text-center p-2 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Volumen</p>
+                  <p className="text-sm font-bold">{formatCurrency(selectedUser.total_spent)}</p>
+                </div>
+                <div className="text-center p-2 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Ticket promedio</p>
+                  <p className="text-sm font-bold">{formatCurrency(selectedUser.total_spent / (selectedUser.enrolled_count || 1))}</p>
+                </div>
+                <div className="text-center p-2 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Clases</p>
+                  <p className="text-sm font-bold">{selectedUser.enrolled_count}</p>
+                </div>
+                <div className="text-center p-2 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Progreso</p>
+                  <p className="text-sm font-bold">{selectedUser.lesson_progress}%</p>
+                </div>
+                <div className="text-center p-2 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Matrícula</p>
+                  <p className="text-sm font-bold">{selectedUser.created_at}</p>
+                </div>
+              </div>
+
+              <Tabs value={activeProfileTab} onValueChange={setActiveProfileTab} className="mt-4">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="resumen">📊 Resumen</TabsTrigger>
+                  <TabsTrigger value="clases">📚 Clases</TabsTrigger>
+                  <TabsTrigger value="crm">📝 CRM</TabsTrigger>
+                </TabsList>
+
+                {/* Tab Resumen */}
+                <TabsContent value="resumen" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="border rounded-lg p-3">
+                      <p className="text-xs text-muted-foreground">Progreso de clases</p>
+                      <Progress value={selectedUser.lesson_progress} className="h-2 mt-2" />
+                      <p className="text-xs mt-1">{selectedUser.lesson_progress}% completado</p>
+                    </div>
+                    <div className="border rounded-lg p-3">
+                      <p className="text-xs text-muted-foreground">Preferencias</p>
+
+                                          <div className="border rounded-lg p-3">
+                      <p className="text-xs text-muted-foreground">Preferencias</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedUser.food_preferences.length > 0 ? (
+                          selectedUser.food_preferences.map(p => <Badge key={p} variant="outline" className="text-xs">{p}</Badge>)
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Sin preferencias</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-3">
+                    <p className="text-xs text-muted-foreground">Rol y Estado</p>
+                    <div className="flex gap-2 mt-2">
+                      <Badge className={selectedUser.role === "admin" ? "bg-purple-100 text-purple-700" : selectedUser.role === "moderador" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
+                        {selectedUser.role === "admin" ? "👑 Admin" : selectedUser.role === "moderador" ? "🛡️ Moderador" : "👤 Alumno"}
+                      </Badge>
+                      <Badge className={
+                        selectedUser.account_status === "activo" ? "bg-green-100 text-green-700" :
+                        selectedUser.account_status === "inactivo" ? "bg-gray-100 text-gray-700" :
+                        selectedUser.account_status === "suspendido" ? "bg-red-100 text-red-700" :
+                        "bg-yellow-100 text-yellow-700"
+                      }>
+                        {selectedUser.account_status === "activo" && "🟢 Activo"}
+                        {selectedUser.account_status === "inactivo" && "⚪ Inactivo"}
+                        {selectedUser.account_status === "suspendido" && "🔴 Suspendido"}
+                        {selectedUser.account_status === "pendiente" && "🟡 Pendiente"}
+                      </Badge>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Tab Clases */}
+                <TabsContent value="clases">
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {selectedUser.enrolled_classes.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">Sin clases asignadas</p>
+                    ) : (
+                      selectedUser.enrolled_classes.map((enrollment) => (
+                        <div key={enrollment.class_id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div>
+                            <p className="font-medium">{enrollment.classes?.title}</p>
+                            <p className="text-xs text-muted-foreground">{enrollment.classes?.category}</p>
+                          </div>
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={`/clases/${enrollment.classes?.slug}`} target="_blank" rel="noopener noreferrer">
+                              Ver clase
+                            </a>
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* Tab CRM */}
+                <TabsContent value="crm" className="space-y-4">
+                  {/* Agregar nota */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <p className="text-sm font-semibold">Agregar nota de seguimiento</p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs">Potencial</Label>
+                        <Select value={notePotential} onValueChange={setNotePotential}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="alto">🔥 Alto potencial</SelectItem>
+                            <SelectItem value="medio">🟡 Medio potencial</SelectItem>
+                            <SelectItem value="bajo">⚪ Bajo potencial</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Próxima acción</Label>
+                        <Select value={noteNextAction} onValueChange={setNoteNextAction}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="whatsapp">📱 Enviar WhatsApp</SelectItem>
+                            <SelectItem value="email">📧 Enviar email</SelectItem>
+                            <SelectItem value="llamada">📞 Llamada</SelectItem>
+                            <SelectItem value="descuento">🎁 Ofrecer descuento</SelectItem>
+                            <SelectItem value="reunion">🤝 Reunión</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Fecha seguimiento</Label>
+                        <Input type="date" value={noteNextDate} onChange={(e) => setNoteNextDate(e.target.value)} className="h-8 text-xs" />
+                      </div>
+                    </div>
+                    <Textarea
+                      placeholder="Escribe la nota de seguimiento..."
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      rows={2}
+                      className="text-sm"
+                    />
+                    <Button size="sm" onClick={saveCrmNote} disabled={!newNote.trim()}>
+                      Guardar nota
+                    </Button>
+                  </div>
+
+                  {/* Lista de notas existentes */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold">Historial de notas</p>
+                    {loadingNotes ? (
+                      <p className="text-center text-muted-foreground py-4">Cargando notas...</p>
+                    ) : crmNotes.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-4">No hay notas de seguimiento</p>
+                    ) : (
+                      crmNotes.map((note) => (
+                        <div key={note.id} className="border rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                {note.potential_level === "alto" && "🔥 Alto"}
+                                {note.potential_level === "medio" && "🟡 Medio"}
+                                {note.potential_level === "bajo" && "⚪ Bajo"}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {note.next_action === "whatsapp" && "📱 WhatsApp"}
+                                {note.next_action === "email" && "📧 Email"}
+                                {note.next_action === "llamada" && "📞 Llamada"}
+                                {note.next_action === "descuento" && "🎁 Descuento"}
+                                {note.next_action === "reunion" && "🤝 Reunión"}
+                              </Badge>
+                              {note.next_action_date && (
+                                <span className="text-xs text-muted-foreground">
+                                  📅 {new Date(note.next_action_date).toLocaleDateString("es-MX")}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(note.created_at).toLocaleDateString("es-MX")}
+                            </span>
+                          </div>
+                          <p className="text-sm">{note.note}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant={note.status === "pendiente" ? "secondary" : "default"} className="text-xs">
+                              {note.status === "pendiente" ? "⏳ Pendiente" : "✅ Completada"}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cerrar</Button>
+                </DialogClose>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default AdminUsuarios;
+                      
