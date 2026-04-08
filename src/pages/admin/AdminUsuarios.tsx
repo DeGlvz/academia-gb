@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, MoreHorizontal, Filter, CalendarDays, BookOpen, X, ShoppingCart, Shield, ShieldOff, CreditCard, User, Mail, Calendar, DollarSign, UtensilsCrossed, GraduationCap, TrendingUp } from "lucide-react";
+import { Search, MoreHorizontal, Filter, CalendarDays, BookOpen, X, ShoppingCart, Shield, ShieldOff, CreditCard, User, Mail, Calendar, DollarSign, UtensilsCrossed, GraduationCap, TrendingUp, Info, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useClasses } from "@/hooks/useClasses";
 import { foodPreferences, type FoodPreference } from "@/data/classes";
@@ -33,8 +34,8 @@ interface UserWithDetails {
   enrolled_count: number;
   lesson_progress: number;
   blog_progress: number;
-  is_admin: boolean;
-  status: "activo" | "inactivo";
+  role: "admin" | "moderador" | "alumno";
+  account_status: "activo" | "inactivo" | "suspendido" | "pendiente";
   food_preferences: FoodPreference[];
   enrolled_classes: any[];
 }
@@ -49,6 +50,8 @@ const AdminUsuarios = () => {
   const [filterClass, setFilterClass] = useState<string>("Todas");
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterRole, setFilterRole] = useState<string>("Todos");
+  const [filterStatus, setFilterStatus] = useState<string>("Todos");
   const [showFilters, setShowFilters] = useState(false);
 
   const [accessUser, setAccessUser] = useState<UserWithDetails | null>(null);
@@ -69,7 +72,7 @@ const AdminUsuarios = () => {
 
       if (profilesError) throw profilesError;
 
-      // Obtener roles
+      // Obtener roles de user_roles (para compatibilidad)
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("*");
@@ -122,16 +125,22 @@ const AdminUsuarios = () => {
           : 0;
         
         // Calcular progreso de blog
-        const totalBlogPosts = 0; // TODO: contar posts publicados
-        const blogProgressPercent = totalBlogPosts > 0 
-          ? Math.round((blogProgress?.filter(b => b.user_id === profile.user_id).length || 0) / totalBlogPosts * 100)
-          : 0;
+        const totalBlogPosts = 0;
+        const blogProgressPercent = 0;
         
-        // Calcular total gastado (precio de clases inscritas)
+        // Calcular total gastado
         const totalSpent = userEnrollments.reduce((sum, e) => {
           const classData = dbClasses.find(c => c.id === e.class_id);
           return sum + (classData?.price || 0);
         }, 0);
+        
+        // Determinar rol
+        let role: "admin" | "moderador" | "alumno" = "alumno";
+        if (adminUserIds.includes(profile.user_id)) {
+          role = "admin";
+        } else if (profile.role === "moderador") {
+          role = "moderador";
+        }
         
         return {
           id: profile.user_id,
@@ -143,8 +152,8 @@ const AdminUsuarios = () => {
           enrolled_count: userEnrollments.length,
           lesson_progress: lessonProgressPercent,
           blog_progress: blogProgressPercent,
-          is_admin: adminUserIds.includes(profile.user_id),
-          status: "activo" as const,
+          role: role,
+          account_status: profile.account_status || "activo",
           food_preferences: profile.food_preferences || [],
           enrolled_classes: userEnrollments,
         };
@@ -165,9 +174,16 @@ const AdminUsuarios = () => {
 
   const paidClasses = dbClasses.filter((c) => !c.is_public && c.price > 0);
 
-  const hasActiveFilters = filterPref !== "Todas" || filterClass !== "Todas" || filterDateFrom || filterDateTo;
+  const hasActiveFilters = filterPref !== "Todas" || filterClass !== "Todas" || filterDateFrom || filterDateTo || filterRole !== "Todos" || filterStatus !== "Todos";
 
-  const clearFilters = () => { setFilterPref("Todas"); setFilterClass("Todas"); setFilterDateFrom(""); setFilterDateTo(""); };
+  const clearFilters = () => { 
+    setFilterPref("Todas"); 
+    setFilterClass("Todas"); 
+    setFilterDateFrom(""); 
+    setFilterDateTo("");
+    setFilterRole("Todos");
+    setFilterStatus("Todos");
+  };
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
@@ -176,9 +192,11 @@ const AdminUsuarios = () => {
       const classMatch = filterClass === "Todas" || u.enrolled_classes.some(e => e.class_id === filterClass);
       const dateFromMatch = !filterDateFrom || u.created_at >= filterDateFrom;
       const dateToMatch = !filterDateTo || u.created_at <= filterDateTo;
-      return textMatch && prefMatch && classMatch && dateFromMatch && dateToMatch;
+      const roleMatch = filterRole === "Todos" || u.role === filterRole;
+      const statusMatch = filterStatus === "Todos" || u.account_status === filterStatus;
+      return textMatch && prefMatch && classMatch && dateFromMatch && dateToMatch && roleMatch && statusMatch;
     });
-  }, [users, search, filterPref, filterClass, filterDateFrom, filterDateTo]);
+  }, [users, search, filterPref, filterClass, filterDateFrom, filterDateTo, filterRole, filterStatus]);
 
   const openAccessDialog = (user: UserWithDetails) => {
     setAccessUser(user);
@@ -196,20 +214,17 @@ const AdminUsuarios = () => {
     if (!accessUser) return;
     
     try {
-      // Eliminar clases actuales
       await supabase
         .from("enrolled_classes")
         .delete()
         .eq("user_id", accessUser.id);
       
-      // Insertar nuevas clases
       for (const classId of accessClasses) {
         await supabase
           .from("enrolled_classes")
           .insert({ user_id: accessUser.id, class_id: classId });
       }
       
-      // Registrar intento de compra/pago
       if (paymentOrderNumber) {
         await supabase
           .from("purchase_attempts")
@@ -225,26 +240,80 @@ const AdminUsuarios = () => {
       
       toast({ title: "Accesos actualizados", description: `Se actualizaron los accesos de ${accessUser.full_name}` });
       setAccessUser(null);
-      loadUsers(); // Recargar usuarios
+      loadUsers();
     } catch (error) {
       console.error("Error saving access:", error);
       toast({ title: "Error", description: "No se pudieron guardar los accesos", variant: "destructive" });
     }
   };
 
-  const toggleAdmin = async (user: UserWithDetails) => {
+  const updateUserRole = async (userId: string, newRole: string) => {
     try {
-      if (user.is_admin) {
-        await supabase.from("user_roles").delete().eq("user_id", user.id).eq("role", "admin");
-        toast({ title: "Rol removido", description: `${user.full_name} ya no es administrador` });
+      // Actualizar en profiles
+      await supabase
+        .from("profiles")
+        .update({ role: newRole })
+        .eq("user_id", userId);
+      
+      // Si es admin, también actualizar user_roles
+      if (newRole === "admin") {
+        await supabase
+          .from("user_roles")
+          .upsert({ user_id: userId, role: "admin" });
       } else {
-        await supabase.from("user_roles").insert({ user_id: user.id, role: "admin" });
-        toast({ title: "Rol asignado", description: `${user.full_name} ahora es administrador` });
+        await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", userId)
+          .eq("role", "admin");
       }
+      
+      toast({ title: "Rol actualizado", description: `El rol se ha actualizado correctamente` });
       loadUsers();
     } catch (error) {
-      console.error("Error toggling admin:", error);
-      toast({ title: "Error", description: "No se pudo cambiar el rol", variant: "destructive" });
+      console.error("Error updating role:", error);
+      toast({ title: "Error", description: "No se pudo actualizar el rol", variant: "destructive" });
+    }
+  };
+
+  const updateUserStatus = async (userId: string, newStatus: string) => {
+    try {
+      await supabase
+        .from("profiles")
+        .update({ account_status: newStatus })
+        .eq("user_id", userId);
+      
+      toast({ title: "Estado actualizado", description: `El estado se ha actualizado correctamente` });
+      loadUsers();
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast({ title: "Error", description: "No se pudo actualizar el estado", variant: "destructive" });
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case "admin": return <Shield className="h-3 w-3" />;
+      case "moderador": return <ShieldOff className="h-3 w-3" />;
+      default: return <User className="h-3 w-3" />;
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case "admin": return "text-purple-600 bg-purple-50 border-purple-200";
+      case "moderador": return "text-blue-600 bg-blue-50 border-blue-200";
+      default: return "text-green-600 bg-green-50 border-green-200";
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "activo": return "bg-green-100 text-green-700";
+      case "inactivo": return "bg-gray-100 text-gray-700";
+      case "suspendido": return "bg-red-100 text-red-700";
+      case "pendiente": return "bg-yellow-100 text-yellow-700";
+      default: return "bg-gray-100 text-gray-700";
     }
   };
 
@@ -252,6 +321,15 @@ const AdminUsuarios = () => {
     if (progress >= 70) return "text-green-600";
     if (progress >= 30) return "text-yellow-600";
     return "text-blue-600";
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
   };
 
   if (isLoading) {
@@ -276,7 +354,7 @@ const AdminUsuarios = () => {
           { value: users.filter((u) => u.enrolled_count > 0).length, label: "Con clases", icon: BookOpen },
           { value: users.filter((u) => u.lesson_progress > 0).length, label: "Con progreso", icon: TrendingUp },
           { value: `${Math.round(users.reduce((s, u) => s + u.lesson_progress, 0) / (users.length || 1))}%`, label: "Progreso promedio", icon: GraduationCap },
-          { value: `$${users.reduce((s, u) => s + u.total_spent, 0).toLocaleString()}`, label: "Ingresos", icon: DollarSign },
+          { value: formatCurrency(users.reduce((s, u) => s + u.total_spent, 0)), label: "Ingresos", icon: DollarSign },
         ].map((s) => (
           <Card key={s.label}>
             <CardContent className="p-4 text-center">
@@ -303,23 +381,48 @@ const AdminUsuarios = () => {
 
       {showFilters && (
         <Card>
-          <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Preferencia alimenticia</Label>
+              <Label className="text-xs text-muted-foreground">Preferencia</Label>
               <Select value={filterPref} onValueChange={(v) => setFilterPref(v as any)}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="Todas">Todas</SelectItem>{foodPreferences.map((p) => (<SelectItem key={p} value={p}>{p}</SelectItem>))}</SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Clase adquirida</Label>
+              <Label className="text-xs text-muted-foreground">Clase</Label>
               <Select value={filterClass} onValueChange={setFilterClass}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="Todas">Todas</SelectItem>{paidClasses.map((c) => (<SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>))}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5"><Label className="text-xs text-muted-foreground flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Desde</Label><Input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="h-9 text-xs" /></div>
-            <div className="space-y-1.5"><Label className="text-xs text-muted-foreground flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Hasta</Label><Input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} className="h-9 text-xs" /></div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Rol</Label>
+              <Select value={filterRole} onValueChange={setFilterRole}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todos">Todos</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="moderador">Moderador</SelectItem>
+                  <SelectItem value="alumno">Alumno</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Estado</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todos">Todos</SelectItem>
+                  <SelectItem value="activo">Activo</SelectItem>
+                  <SelectItem value="inactivo">Inactivo</SelectItem>
+                  <SelectItem value="suspendido">Suspendido</SelectItem>
+                  <SelectItem value="pendiente">Pendiente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Desde</Label><Input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} className="h-9 text-xs" /></div>
+            <div className="space-y-1.5"><Label className="text-xs text-muted-foreground">Hasta</Label><Input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} className="h-9 text-xs" /></div>
           </CardContent>
         </Card>
       )}
@@ -334,13 +437,14 @@ const AdminUsuarios = () => {
               <thead>
                 <tr className="border-b text-left">
                   <th className="p-3 font-medium text-muted-foreground">Alumno</th>
-                  <th className="p-3 font-medium text-muted-foreground">Matrícula (Registro)</th>
+                  <th className="p-3 font-medium text-muted-foreground">Matrícula</th>
+                  <th className="p-3 font-medium text-muted-foreground">Rol</th>
+                  <th className="p-3 font-medium text-muted-foreground">Estado</th>
                   <th className="p-3 font-medium text-muted-foreground text-center">Clases</th>
                   <th className="p-3 font-medium text-muted-foreground text-center">Progreso</th>
                   <th className="p-3 font-medium text-muted-foreground text-right">Total</th>
-                  <th className="p-3 font-medium text-muted-foreground text-center">Estado</th>
                   <th className="p-3 w-10"></th>
-                </tr>
+                 </tr>
               </thead>
               <tbody>
                 {filtered.map((u) => (
@@ -353,17 +457,78 @@ const AdminUsuarios = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <Link 
-                            to={`/admin/usuarios/${u.id}`} 
-                            className="font-medium text-foreground hover:text-primary hover:underline"
-                          >
-                            {u.full_name}
-                          </Link>
+                          <div className="flex items-center gap-1">
+                            <Link 
+                              to={`/admin/usuarios/${u.id}`} 
+                              className="font-medium text-foreground hover:text-primary hover:underline"
+                            >
+                              {u.full_name}
+                            </Link>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">Haz clic para ver perfil completo<br/>con métricas y seguimiento CRM</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                           <p className="text-xs text-muted-foreground">{u.email}</p>
                         </div>
                       </div>
-                    </td>
+                     </td>
                     <td className="p-3 text-muted-foreground text-xs">{u.created_at}</td>
+                    <td className="p-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className={`h-6 text-xs gap-1 ${getRoleColor(u.role)}`}>
+                            {getRoleIcon(u.role)}
+                            {u.role === "admin" ? "Admin" : u.role === "moderador" ? "Moderador" : "Alumno"}
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => updateUserRole(u.id, "alumno")}>
+                            <User className="h-3.5 w-3.5 mr-2" /> Alumno
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserRole(u.id, "moderador")}>
+                            <ShieldOff className="h-3.5 w-3.5 mr-2" /> Moderador
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserRole(u.id, "admin")}>
+                            <Shield className="h-3.5 w-3.5 mr-2" /> Admin
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                    <td className="p-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="outline" size="sm" className={`h-6 text-xs ${getStatusColor(u.account_status)}`}>
+                            {u.account_status === "activo" && "🟢 Activo"}
+                            {u.account_status === "inactivo" && "⚪ Inactivo"}
+                            {u.account_status === "suspendido" && "🔴 Suspendido"}
+                            {u.account_status === "pendiente" && "🟡 Pendiente"}
+                            <ChevronDown className="h-3 w-3 ml-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "activo")}>
+                            🟢 Activo
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "inactivo")}>
+                            ⚪ Inactivo
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "suspendido")}>
+                            🔴 Suspendido
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "pendiente")}>
+                            🟡 Pendiente
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
                     <td className="p-3 text-center font-medium">{u.enrolled_count}</td>
                     <td className="p-3 text-center">
                       <div className="flex flex-col items-center gap-1">
@@ -373,19 +538,7 @@ const AdminUsuarios = () => {
                         <Progress value={u.lesson_progress} className="h-1.5 w-16" />
                       </div>
                     </td>
-                    <td className="p-3 text-right font-medium">${u.total_spent.toLocaleString()}</td>
-                    <td className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <Badge variant={u.status === "activo" ? "default" : "secondary"} className="text-xs">
-                          {u.status}
-                        </Badge>
-                        {u.is_admin && (
-                          <Badge variant="outline" className="text-xs border-primary text-primary gap-0.5">
-                            <Shield className="h-3 w-3" />Admin
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
+                    <td className="p-3 text-right font-medium">{formatCurrency(u.total_spent)}</td>
                     <td className="p-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -397,15 +550,10 @@ const AdminUsuarios = () => {
                           <DropdownMenuItem onClick={() => openAccessDialog(u)}>
                             <BookOpen className="h-3.5 w-3.5 mr-2" /> Asignar accesos
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toggleAdmin(u)}>
-                            {u.is_admin ? (
-                              <><ShieldOff className="h-3.5 w-3.5 mr-2" /> Quitar admin</>
-                            ) : (
-                              <><Shield className="h-3.5 w-3.5 mr-2" /> Hacer admin</>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setProfileUser(u)}>
-                            Ver perfil
+                          <DropdownMenuItem asChild>
+                            <Link to={`/admin/usuarios/${u.id}`}>
+                              <User className="h-3.5 w-3.5 mr-2" /> Ver perfil completo
+                            </Link>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -426,7 +574,6 @@ const AdminUsuarios = () => {
           </DialogHeader>
           <p className="text-sm text-muted-foreground">Marca las clases a las que este alumno tendrá acceso.</p>
 
-          {/* Datos del pago */}
           <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
             <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               <CreditCard className="h-3.5 w-3.5" /> Datos del pago (opcional)
@@ -450,13 +597,11 @@ const AdminUsuarios = () => {
                   <SelectItem value="Efectivo">Efectivo</SelectItem>
                   <SelectItem value="Tarjeta">Tarjeta de crédito/débito</SelectItem>
                   <SelectItem value="PayPal">PayPal</SelectItem>
-                  <SelectItem value="Otro">Otro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Lista de clases */}
           <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
             {paidClasses.map((c) => {
               const checked = accessClasses.includes(c.id);
@@ -465,7 +610,7 @@ const AdminUsuarios = () => {
                   <Checkbox checked={checked} onCheckedChange={() => toggleAccess(c.id)} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{c.title}</p>
-                    <p className="text-xs text-muted-foreground">{c.category} · ${c.price} MXN</p>
+                    <p className="text-xs text-muted-foreground">{c.category} · {formatCurrency(c.price)}</p>
                   </div>
                 </label>
               );
@@ -474,75 +619,6 @@ const AdminUsuarios = () => {
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
             <Button onClick={saveAccess}>Guardar accesos</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: Perfil del alumno */}
-      <Dialog open={!!profileUser} onOpenChange={(open) => !open && setProfileUser(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Perfil del alumno</DialogTitle></DialogHeader>
-          {profileUser && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                    {profileUser.full_name.split(" ").map((n) => n[0]).join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-semibold text-foreground">{profileUser.full_name}</p>
-                  <p className="text-xs text-muted-foreground">{profileUser.email}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border p-3 space-y-1">
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Calendar className="h-3 w-3" /> Matrícula</p>
-                  <p className="text-sm font-medium text-foreground">{profileUser.created_at}</p>
-                </div>
-                <div className="rounded-lg border p-3 space-y-1">
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1"><DollarSign className="h-3 w-3" /> Total gastado</p>
-                  <p className="text-sm font-medium text-foreground">${profileUser.total_spent.toLocaleString()}</p>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3 w-3" /> Progreso</p>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Clases</p>
-                    <Progress value={profileUser.lesson_progress} className="h-2" />
-                    <p className="text-xs mt-1">{profileUser.lesson_progress}% completado</p>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-muted-foreground">Blog</p>
-                    <Progress value={profileUser.blog_progress} className="h-2" />
-                    <p className="text-xs mt-1">{profileUser.blog_progress}% leído</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><BookOpen className="h-3 w-3" /> Clases ({profileUser.enrolled_count})</p>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {profileUser.enrolled_count > 0
-                    ? profileUser.enrolled_classes.map((e) => {
-                        const cls = dbClasses.find((c) => c.id === e.class_id);
-                        return <p key={e.class_id} className="text-xs text-foreground">{cls?.title ?? e.class_id}</p>;
-                      })
-                    : <span className="text-xs text-muted-foreground">Sin clases asignadas</span>}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Badge variant={profileUser.status === "activo" ? "default" : "secondary"}>{profileUser.status}</Badge>
-                {profileUser.is_admin && <Badge variant="outline" className="border-primary text-primary gap-0.5"><Shield className="h-3 w-3" /> Admin</Badge>}
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
