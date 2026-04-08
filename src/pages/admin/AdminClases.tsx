@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -30,11 +29,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Eye, DollarSign, Lock } from "lucide-react";
+import { Plus, Pencil, Trash2, DollarSign } from "lucide-react";
 import ClaseForm from "@/components/admin/ClaseForm";
-import LessonManager from "@/components/admin/LessonManager";
 
 interface Clase {
   id: string;
@@ -54,7 +52,6 @@ const AdminClases = () => {
   const queryClient = useQueryClient();
   const [selectedClase, setSelectedClase] = useState<Clase | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [lessonsDialogOpen, setLessonsDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [claseToDelete, setClaseToDelete] = useState<Clase | null>(null);
   const [filter, setFilter] = useState<"all" | "paid" | "free">("all");
@@ -110,7 +107,7 @@ const AdminClases = () => {
     },
   });
 
-  // Mutación para cambiar precio (solo si no tiene alumnos)
+  // Mutación para cambiar precio
   const changePriceMutation = useMutation({
     mutationFn: async ({ id, newPrice }: { id: string; newPrice: number }) => {
       const clase = clases.find((c) => c.id === id);
@@ -136,11 +133,6 @@ const AdminClases = () => {
   const handleEdit = (clase: Clase) => {
     setSelectedClase(clase);
     setDialogOpen(true);
-  };
-
-  const handleManageLessons = (clase: Clase) => {
-    setSelectedClase(clase);
-    setLessonsDialogOpen(true);
   };
 
   const handleDelete = (clase: Clase) => {
@@ -179,7 +171,7 @@ const AdminClases = () => {
               Nueva clase
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{selectedClase ? "Editar clase" : "Crear nueva clase"}</DialogTitle>
             </DialogHeader>
@@ -270,15 +262,7 @@ const AdminClases = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleManageLessons(clase)}
-                        title="Gestionar lecciones"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(clase)} title="Editar">
+                      <Button variant="ghost" size="sm" onClick={() => handleEdit(clase)} title="Editar clase y lecciones">
                         <Pencil className="h-4 w-4" />
                       </Button>
                       {clase.price > 0 && clase.enrolled_count === 0 && (
@@ -309,23 +293,6 @@ const AdminClases = () => {
           </Table>
         </CardContent>
       </Card>
-
-      {/* Dialog Lecciones */}
-      <Dialog open={lessonsDialogOpen} onOpenChange={setLessonsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Lecciones de {selectedClase?.title}</DialogTitle>
-          </DialogHeader>
-          {selectedClase && (
-            <LessonManager
-              classId={selectedClase.id}
-              onSuccess={() => {
-                queryClient.invalidateQueries({ queryKey: ["admin-clases"] });
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* AlertDialog Eliminar */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
