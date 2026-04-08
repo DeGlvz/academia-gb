@@ -22,7 +22,7 @@ import AdminUsuarios from "./pages/admin/AdminUsuarios.tsx";
 import AdminContenido from "./pages/admin/AdminContenido.tsx";
 import AdminConfiguracion from "./pages/admin/AdminConfiguracion.tsx";
 import ScrollToTop from "./components/ScrollToTop.tsx";
-
+import UserProfile from "./pages/admin/UserProfile.tsx";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -45,7 +45,7 @@ const App = () => (
               {/* Rutas del blog */}
               <Route path="/basicos" element={<BlogBasicos />} />
               <Route path="/blog/:slug" element={<BlogPostDetalle />} />
-              
+              <Route path="/admin/usuarios/:id" element={<ProtectedRoute requireAdmin><UserProfile /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminLayout /></ProtectedRoute>}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="clases" element={<AdminClases />} />
