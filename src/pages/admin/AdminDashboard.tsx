@@ -38,17 +38,6 @@ interface UpcomingFollowup {
   potential_level: string;
 }
 
-interface HighPotentialUser {
-  user_id: string;
-  user_name: string;
-  user_email: string;
-  total_spent: number;
-  enrolled_count: number;
-  lesson_progress: number;
-  potential_level: string;
-  last_note_date: string;
-}
-
 interface RecentNote {
   id: string;
   user_id: string;
@@ -82,9 +71,15 @@ const AdminDashboard = () => {
   });
   const [crmSummary, setCrmSummary] = useState<CrmSummary | null>(null);
   const [upcomingFollowups, setUpcomingFollowups] = useState<UpcomingFollowup[]>([]);
-  const [highPotentialUsers, setHighPotentialUsers] = useState<HighPotentialUser[]>([]);
   const [recentNotes, setRecentNotes] = useState<RecentNote[]>([]);
   const [popularClasses, setPopularClasses] = useState<PopularClass[]>([]);
+  const [studentDistribution, setStudentDistribution] = useState([
+    { name: "Alto potencial", value: 0, color: "bg-red-500" },
+    { name: "Medio potencial", value: 0, color: "bg-yellow-500" },
+    { name: "Bajo potencial", value: 0, color: "bg-green-500" },
+    { name: "Sin seguimiento", value: 0, color: "bg-gray-400" },
+  ]);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Cargar datos del dashboard
@@ -96,7 +91,8 @@ const AdminDashboard = () => {
         .from("profiles")
         .select("*");
       if (profilesError) throw profilesError;
-      const totalUsers = profiles?.length || 0;
+      const totalUsersCount = profiles?.length || 0;
+      setTotalUsers(totalUsersCount);
 
       // 2. Obtener clases inscritas para calcular ingresos y ventas
       const { data: enrollments, error: enrollError } = await supabase
@@ -127,11 +123,9 @@ const AdminDashboard = () => {
 
       setPopularClasses(popularWithSales);
 
-      // 4. Calcular cambios (simplificado - comparar con mes anterior)
-      // Por ahora usamos valores mock para cambios, luego se puede mejorar
       setStats({
         total_revenue: totalRevenue,
-        total_users: totalUsers,
+        total_users: totalUsersCount,
         total_classes: classes.length,
         total_sales: totalSales,
         revenue_change: 12.5,
@@ -140,7 +134,7 @@ const AdminDashboard = () => {
         sales_change: totalSales > 0 ? 15 : 0,
       });
 
-      // 5. CRM: Obtener notas
+      // 4. CRM: Obtener notas
       const { data: allNotes, error: notesError } = await supabase
         .from("crm_notes")
         .select("*");
@@ -153,6 +147,27 @@ const AdminDashboard = () => {
       const upcoming = allNotes?.filter(n => n.next_action_date && n.next_action_date >= today && n.status === "pendiente").length || 0;
 
       setCrmSummary({ total_notes: total, pending_notes: pending, completed_notes: completed, upcoming_followups: upcoming });
+
+      // 5. Calcular distribución de alumnos por potencial
+      const highPotential = new Set();
+      const mediumPotential = new Set();
+      const lowPotential = new Set();
+
+      allNotes?.forEach(note => {
+        if (note.potential_level === "alto") highPotential.add(note.user_id);
+        else if (note.potential_level === "medio") mediumPotential.add(note.user_id);
+        else if (note.potential_level === "bajo") lowPotential.add(note.user_id);
+      });
+
+      const withFollowup = highPotential.size + mediumPotential.size + lowPotential.size;
+      const withoutFollowup = totalUsersCount - withFollowup;
+
+      setStudentDistribution([
+        { name: "Alto potencial", value: highPotential.size, color: "bg-red-500" },
+        { name: "Medio potencial", value: mediumPotential.size, color: "bg-yellow-500" },
+        { name: "Bajo potencial", value: lowPotential.size, color: "bg-green-500" },
+        { name: "Sin seguimiento", value: withoutFollowup, color: "bg-gray-400" },
+      ]);
 
       // 6. Próximos seguimientos (próximos 7 días)
       const sevenDaysLater = new Date();
@@ -187,44 +202,7 @@ const AdminDashboard = () => {
       );
       setUpcomingFollowups(upcomingWithUsers);
 
-      // 7. Alumnos con alto potencial
-      const highPotentialNotes = allNotes?.filter(n => n.potential_level === "alto") || [];
-      const highPotentialUserIds = [...new Set(highPotentialNotes.map(n => n.user_id))];
-
-      const highPotentialData = await Promise.all(
-        highPotentialUserIds.slice(0, 5).map(async (userId) => {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name, email")
-            .eq("user_id", userId)
-            .single();
-
-          const userEnrollments = enrollments?.filter(e => e.user_id === userId) || [];
-          const totalSpent = userEnrollments.reduce((sum, e) => sum + (e.classes?.price || 0), 0);
-          
-          // Calcular progreso aproximado
-          const { data: progress } = await supabase
-            .from("lesson_progress")
-            .select("*")
-            .eq("user_id", userId);
-          
-          const progressPercent = progress?.length ? Math.min(progress.length * 10, 100) : 0;
-
-          return {
-            user_id: userId,
-            user_name: profile?.full_name || "Usuario",
-            user_email: profile?.email || "",
-            total_spent: totalSpent,
-            enrolled_count: userEnrollments.length,
-            lesson_progress: progressPercent,
-            potential_level: "alto",
-            last_note_date: highPotentialNotes.find(n => n.user_id === userId)?.created_at?.split("T")[0] || "",
-          };
-        })
-      );
-      setHighPotentialUsers(highPotentialData);
-
-      // 8. Notas recientes
+      // 7. Notas recientes
       const recentNotesData = allNotes?.slice(0, 5).map(async (note) => {
         const { data: profile } = await supabase
           .from("profiles")
@@ -436,43 +414,89 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Alumnos con alto potencial */}
+        {/* Distribución de alumnos - Gráfica de barras */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
-              Alumnos con alto potencial
+              Distribución de alumnos por potencial
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {highPotentialUsers.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">No hay alumnos con alto potencial</p>
-            ) : (
-              highPotentialUsers.map((u) => (
-                <div key={u.user_id} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-red-100 text-red-700 text-xs">
-                        {u.user_name.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <Link to={`/admin/usuarios/${u.user_id}`} className="font-medium text-sm hover:text-primary hover:underline">
-                        {u.user_name}
-                      </Link>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>💰 {formatCurrency(u.total_spent)}</span>
-                        <span>📚 {u.enrolled_count} clases</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <Progress value={u.lesson_progress} className="h-1.5 w-20 mb-1" />
-                    <p className="text-xs text-muted-foreground">{u.lesson_progress}% progreso</p>
-                  </div>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Barra: Alto potencial */}
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-red-500"></span>
+                    Alto potencial
+                  </span>
+                  <span className="font-medium text-red-600">{studentDistribution[0].value} alumnos</span>
                 </div>
-              ))
-            )}
+                <div className="h-2 bg-red-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-red-500 rounded-full transition-all duration-500"
+                    style={{ width: totalUsers > 0 ? `${(studentDistribution[0].value / totalUsers) * 100}%` : "0%" }}
+                  />
+                </div>
+              </div>
+
+              {/* Barra: Medio potencial */}
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-yellow-500"></span>
+                    Medio potencial
+                  </span>
+                  <span className="font-medium text-yellow-600">{studentDistribution[1].value} alumnos</span>
+                </div>
+                <div className="h-2 bg-yellow-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-yellow-500 rounded-full transition-all duration-500"
+                    style={{ width: totalUsers > 0 ? `${(studentDistribution[1].value / totalUsers) * 100}%` : "0%" }}
+                  />
+                </div>
+              </div>
+
+              {/* Barra: Bajo potencial */}
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                    Bajo potencial
+                  </span>
+                  <span className="font-medium text-green-600">{studentDistribution[2].value} alumnos</span>
+                </div>
+                <div className="h-2 bg-green-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 rounded-full transition-all duration-500"
+                    style={{ width: totalUsers > 0 ? `${(studentDistribution[2].value / totalUsers) * 100}%` : "0%" }}
+                  />
+                </div>
+              </div>
+
+              {/* Barra: Sin seguimiento */}
+              <div>
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-gray-400"></span>
+                    Sin seguimiento
+                  </span>
+                  <span className="font-medium text-gray-600">{studentDistribution[3].value} alumnos</span>
+                </div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gray-400 rounded-full transition-all duration-500"
+                    style={{ width: totalUsers > 0 ? `${(studentDistribution[3].value / totalUsers) * 100}%` : "0%" }}
+                  />
+                </div>
+              </div>
+
+              {/* Total */}
+              <div className="pt-2 text-center text-xs text-muted-foreground border-t">
+                Total: {totalUsers} alumnos registrados
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
