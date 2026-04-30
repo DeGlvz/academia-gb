@@ -32,7 +32,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-// --- Componente SortableItem (Mantiene Drag & Drop) ---
+// --- SortableItem Component (mantiene drag & drop) ---
 const SortableItem = ({ lesson, onEdit, onDelete }: any) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: lesson.id,
@@ -106,7 +106,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
 
   const createLesson = useMutation({
     mutationFn: async (newLesson: any) => {
-      console.log("Creando lección:", newLesson);
+      console.log("🔧 Creando lección:", newLesson);
       const { data, error } = await supabase.from("lessons").insert([newLesson]);
       if (error) throw error;
       return data;
@@ -114,17 +114,17 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lessons", classId] });
       handleCloseDialog();
-      toast({ title: "Lección creada correctamente" });
+      toast({ title: "✅ Lección creada correctamente" });
     },
     onError: (error: any) => {
-      console.error("Error al crear:", error);
+      console.error("❌ Error al crear:", error);
       toast({ title: "Error al crear", description: error.message, variant: "destructive" });
     }
   });
 
   const updateLesson = useMutation({
     mutationFn: async ({ id, ...updates }: any) => {
-      console.log("Actualizando lección ID:", id, updates);
+      console.log("🔧 Actualizando lección ID:", id, updates);
       const { data, error } = await supabase.from("lessons").update(updates).eq("id", id);
       if (error) throw error;
       return data;
@@ -132,10 +132,10 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lessons", classId] });
       handleCloseDialog();
-      toast({ title: "Lección actualizada" });
+      toast({ title: "✅ Lección actualizada" });
     },
     onError: (error: any) => {
-      console.error("Error al actualizar:", error);
+      console.error("❌ Error al actualizar:", error);
       toast({ title: "Error al actualizar", description: error.message, variant: "destructive" });
     }
   });
@@ -147,7 +147,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lessons", classId] });
-      toast({ title: "Lección eliminada" });
+      toast({ title: "✅ Lección eliminada" });
     },
     onError: (error: any) => {
       toast({ title: "Error al eliminar", description: error.message, variant: "destructive" });
@@ -155,6 +155,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
   });
 
   const handleSaveLesson = () => {
+    // Validación
     if (!formState.title.trim()) {
       toast({ title: "El título es obligatorio", variant: "destructive" });
       return;
