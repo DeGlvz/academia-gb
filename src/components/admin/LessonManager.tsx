@@ -91,6 +91,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  // 🔧 FIX: Usar sort_order en lugar de order_index
   const { data: lessons = [], isLoading } = useQuery({
     queryKey: ["lessons", classId],
     queryFn: async () => {
@@ -98,7 +99,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
         .from("lessons")
         .select("*")
         .eq("class_id", classId)
-        .order("order_index");
+        .order("sort_order", { ascending: true });  // 🔧 sort_order
       if (error) throw error;
       return data;
     },
@@ -107,7 +108,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
   const createLesson = useMutation({
     mutationFn: async (newLesson: any) => {
       console.log("🔧 Creando lección:", newLesson);
-      const { data, error } = await supabase.from("lessons").insert([newLesson]);
+      const { data, error } = await supabase.from("lessons").insert([newLesson]).select();
       if (error) throw error;
       return data;
     },
@@ -125,7 +126,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
   const updateLesson = useMutation({
     mutationFn: async ({ id, ...updates }: any) => {
       console.log("🔧 Actualizando lección ID:", id, updates);
-      const { data, error } = await supabase.from("lessons").update(updates).eq("id", id);
+      const { data, error } = await supabase.from("lessons").update(updates).eq("id", id).select();
       if (error) throw error;
       return data;
     },
@@ -155,19 +156,25 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
   });
 
   const handleSaveLesson = () => {
-    // Validación
     if (!formState.title.trim()) {
       toast({ title: "El título es obligatorio", variant: "destructive" });
       return;
     }
 
+    // 🔧 FIX: Usar sort_order y agregar campos requeridos
     const payload = {
+      class_id: classId,
       title: formState.title,
+      description: "",
       content_url: formState.content_url || null,
       material_url: formState.material_url || null,
-      class_id: classId,
-      order_index: editingLesson ? editingLesson.order_index : lessons.length,
+      lesson_type: "video",
+      sort_order: editingLesson ? editingLesson.sort_order : lessons.length,  // 🔧 sort_order
+      is_free: false,
+      duration: "",
     };
+
+    console.log("🔧 Payload a enviar:", payload);
 
     if (editingLesson) {
       updateLesson.mutate({ id: editingLesson.id, ...payload });
@@ -185,13 +192,14 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
 
       queryClient.setQueryData(["lessons", classId], newOrder);
 
+      // 🔧 FIX: Actualizar sort_order en lugar de order_index
       const updates = newOrder.map((lesson, index) => ({
         id: lesson.id,
-        order_index: index,
+        sort_order: index,
       }));
 
       for (const update of updates) {
-        await supabase.from("lessons").update({ order_index: update.order_index }).eq("id", update.id);
+        await supabase.from("lessons").update({ sort_order: update.sort_order }).eq("id", update.id);
       }
     }
   };
