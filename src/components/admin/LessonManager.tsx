@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -91,7 +92,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // 🔧 FIX: Usar sort_order en lugar de order_index
+  // 🔧 CORREGIDO: Usar sort_order en lugar de order_index
   const { data: lessons = [], isLoading } = useQuery({
     queryKey: ["lessons", classId],
     queryFn: async () => {
@@ -99,7 +100,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
         .from("lessons")
         .select("*")
         .eq("class_id", classId)
-        .order("sort_order", { ascending: true });  // 🔧 sort_order
+        .order("sort_order", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -109,7 +110,10 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
     mutationFn: async (newLesson: any) => {
       console.log("🔧 Creando lección:", newLesson);
       const { data, error } = await supabase.from("lessons").insert([newLesson]).select();
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Error Supabase:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
@@ -119,7 +123,11 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
     },
     onError: (error: any) => {
       console.error("❌ Error al crear:", error);
-      toast({ title: "Error al crear", description: error.message, variant: "destructive" });
+      toast({ 
+        title: "Error al crear", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     }
   });
 
@@ -161,7 +169,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
       return;
     }
 
-    // 🔧 FIX: Usar sort_order y agregar campos requeridos
+    // 🔧 CORREGIDO: Usar sort_order en lugar de order_index
     const payload = {
       class_id: classId,
       title: formState.title,
@@ -169,12 +177,12 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
       content_url: formState.content_url || null,
       material_url: formState.material_url || null,
       lesson_type: "video",
-      sort_order: editingLesson ? editingLesson.sort_order : lessons.length,  // 🔧 sort_order
+      sort_order: editingLesson ? editingLesson.sort_order : lessons.length,
       is_free: false,
-      duration: "",
+      duration: null,
     };
 
-    console.log("🔧 Payload a enviar:", payload);
+    console.log("📦 Payload enviado:", payload);
 
     if (editingLesson) {
       updateLesson.mutate({ id: editingLesson.id, ...payload });
@@ -192,7 +200,7 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
 
       queryClient.setQueryData(["lessons", classId], newOrder);
 
-      // 🔧 FIX: Actualizar sort_order en lugar de order_index
+      // 🔧 CORREGIDO: Actualizar sort_order en lugar de order_index
       const updates = newOrder.map((lesson, index) => ({
         id: lesson.id,
         sort_order: index,
@@ -259,6 +267,9 @@ export const LessonManager = ({ classId }: LessonManagerProps) => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingLesson ? "Editar Lección" : "Nueva Lección"}</DialogTitle>
+            <DialogDescription>
+              Completa los campos para {editingLesson ? "editar" : "crear"} una lección.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
