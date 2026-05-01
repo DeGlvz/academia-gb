@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router-dom";
+import { useRef } from "react"; // 🔧 Importado
 import { ArrowLeft, Play, Lock, Clock, BookOpen, ShoppingCart, CheckCircle, User, Check, FileText, Video, Code, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,10 +30,13 @@ const ClaseDetalle = () => {
   const { toast } = useToast();
   const inCart = classData ? isInCart(classData.id) : false;
 
-  // 🔧 CORREGIDO: Determinar si el usuario tiene acceso
-  // - Si la clase es gratis (price === 0) Y el usuario está logueado → acceso completo
-  // - Si la clase es gratis Y NO está logueado → mostrar mensaje de login
-  // - Si la clase es de paga → seguir la lógica normal (isEnrolled o comprar)
+  // 🔧 Referencia para scroll a lecciones
+  const lessonsRef = useRef<HTMLDivElement>(null);
+
+  const scrollToLessons = () => {
+    lessonsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const isFree = classData?.price === 0;
   const hasAccess = isFree ? !!user : isEnrolled;
 
@@ -83,7 +87,6 @@ const ClaseDetalle = () => {
   const totalLessons = classData.lessons.length;
   const compatibleModels = classData.compatible_models || [];
 
-  // Función para obtener el icono según tipo de lección
   const getLessonIcon = (lessonType?: string) => {
     switch (lessonType) {
       case "video":
@@ -97,7 +100,6 @@ const ClaseDetalle = () => {
     }
   };
 
-  // Función para renderizar el contenido de la lección según tipo
   const renderLessonContent = (lesson: any) => {
     if (!hasAccess && !lesson.is_free) {
       if (!user && isFree) {
@@ -219,7 +221,6 @@ const ClaseDetalle = () => {
         <div className="container px-4 py-8 md:py-12">
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
-              {/* Imagen principal con bloqueo condicional */}
               <div className="relative aspect-video bg-foreground/5 rounded-xl overflow-hidden border">
                 <img
                   src={classData.image_url || "/placeholder.svg"}
@@ -291,8 +292,8 @@ const ClaseDetalle = () => {
                 </div>
               </div>
 
-              {/* Lista de lecciones */}
-              <div className="space-y-4">
+              {/* 🔧 Sección de lecciones con ref para scroll */}
+              <div ref={lessonsRef} className="space-y-4">
                 <h2 className="text-lg font-semibold text-foreground">Contenido del curso ({totalLessons} lecciones)</h2>
                 <div className="space-y-2">
                   {classData.lessons.map((lesson, index) => {
@@ -344,9 +345,7 @@ const ClaseDetalle = () => {
                             </DialogTitle>
                           </DialogHeader>
                           <div className="space-y-4">
-                            {lesson.description && (
-                              <p className="text-muted-foreground">{lesson.description}</p>
-                            )}
+                            {lesson.description && <p className="text-muted-foreground">{lesson.description}</p>}
                             {renderLessonContent(lesson)}
                           </div>
                         </DialogContent>
@@ -384,7 +383,11 @@ const ClaseDetalle = () => {
                           <CheckCircle className="h-5 w-5" />
                           {isFree ? "Clase gratuita desbloqueada" : "Ya estás inscrita"}
                         </div>
-                        <Button className="w-full gap-2 font-body" size="lg">
+                        <Button 
+                          className="w-full gap-2 font-body" 
+                          size="lg" 
+                          onClick={scrollToLessons}
+                        >
                           <Play className="h-4 w-4" />
                           Empezar clase
                         </Button>
