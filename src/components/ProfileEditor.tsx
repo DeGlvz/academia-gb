@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Instagram, Facebook, Twitter, Tv, Globe } from "lucide-react";
+import { Save, Instagram, Facebook, Tv, Globe } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface ProfileEditorProps {
@@ -53,13 +53,12 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
   const [whatsapp, setWhatsapp] = useState(profile.whatsapp || "");
   const [facebookUser, setFacebookUser] = useState(profile.facebook || "");
   
-  // Redes sociales del alumno
+  // Redes sociales del alumno (sin Twitter)
   const [instagram, setInstagram] = useState(profile.instagram || "");
-  const [twitter, setTwitter] = useState(profile.twitter || "");
   const [tiktok, setTikTok] = useState(profile.tiktok || "");
   const [website, setWebsite] = useState(profile.website || "");
   
-  // Modelos Thermomix - AHORA ES UN ARRAY
+  // Modelos Thermomix
   const [selectedModels, setSelectedModels] = useState<string[]>(
     profile.thermomixModels || []
   );
@@ -80,7 +79,6 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
     setWhatsapp(profile.whatsapp || "");
     setFacebookUser(profile.facebook || "");
     setInstagram(profile.instagram || "");
-    setTwitter(profile.twitter || "");
     setTikTok(profile.tiktok || "");
     setWebsite(profile.website || "");
     setSelectedModels(profile.thermomixModels || []);
@@ -103,7 +101,6 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
     
     setIsSaving(true);
     
-    // Determinar los modelos finales (array completo)
     let finalModels: string[];
     if (noThermomix) {
       finalModels = [];
@@ -119,7 +116,6 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
           whatsapp: whatsapp,
           facebook: facebookUser,
           instagram: instagram,
-          twitter: twitter,
           tiktok: tiktok,
           website: website,
           thermomix_models: finalModels,
@@ -130,7 +126,6 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
       
       if (error) throw error;
       
-      // Actualizar email si cambió
       if (email !== profile.email) {
         const { error: emailError } = await supabase.auth.updateUser({
           email: email,
@@ -142,7 +137,6 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
         });
       }
       
-      // Invalidar queries para refrescar
       await queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
       
       toast({
@@ -189,7 +183,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
         </CardContent>
       </Card>
 
-      {/* Mis redes sociales */}
+      {/* Mis redes sociales (sin Twitter) */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-display">Mis redes sociales</CardTitle>
@@ -200,10 +194,6 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
             <div className="space-y-2">
               <Label htmlFor="instagram" className="flex items-center gap-2"><Instagram className="h-4 w-4" /> Instagram</Label>
               <Input id="instagram" value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@tu_usuario" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="twitter" className="flex items-center gap-2"><Twitter className="h-4 w-4" /> X / Twitter</Label>
-              <Input id="twitter" value={twitter} onChange={(e) => setTwitter(e.target.value)} placeholder="@tu_usuario" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tiktok" className="flex items-center gap-2"><Tv className="h-4 w-4" /> TikTok</Label>
