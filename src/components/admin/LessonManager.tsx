@@ -74,10 +74,9 @@ const SortableItem = ({ lesson, onEdit, onDelete }: any) => {
 
 interface LessonManagerProps {
   classId: string;
-  onSuccess?: () => void;
 }
 
-const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
+const LessonManager = ({ classId }: LessonManagerProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -116,7 +115,6 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lessons", classId] });
-      if (onSuccess) onSuccess();
       handleCloseDialog();
       toast({ title: "✅ Lección creada correctamente" });
     },
@@ -135,7 +133,6 @@ const LessonManager = ({ classId, onSuccess }: LessonManagerProps) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lessons", classId] });
-      if (onSuccess) onSuccess();
       handleCloseDialog();
       toast({ title: "✅ Lección actualizada" });
     },
