@@ -48,7 +48,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             Inicio
           </Link>
 
-          {/* Submenú Clases */}
+          {/* 🔧 TAREA 2: Submenú Clases con opciones */}
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -69,13 +69,28 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                     >
                       🎁 Clases gratis
                     </Link>
+                    <Link
+                      to="/basicos"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      📖 Básicos de Thermomix
+                    </Link>
+                    <Link
+                      to="/#de-mi-cocina"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      👩‍🍳 De mi cocina a tu cocina
+                    </Link>
                     {user && (
-                      <Link
-                        to="/mi-perfil"
-                        className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                      >
-                        📊 Mi progreso
-                      </Link>
+                      <>
+                        <DropdownMenuSeparator />
+                        <Link
+                          to="/mi-perfil"
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                        >
+                          📊 Mi progreso
+                        </Link>
+                      </>
                     )}
                   </div>
                 </NavigationMenuContent>
@@ -176,15 +191,39 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
       {isMenuOpen && (
         <nav className="md:hidden border-t bg-background px-4 py-4 space-y-3 animate-fade-in">
           <Link to="/" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
-          <Link to="/clases" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>📚 Catálogo de clases</Link>
-          <Link to="/#clases-gratis" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>🎁 Clases gratis</Link>
-          {user && (
-            <Link to="/mi-perfil" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>📊 Mi progreso</Link>
-          )}
-          <Link to="/herramientas/calculadora-panadero" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>🧮 Calculadora Panadera Pro</Link>
-          <button onClick={() => { onSobreGabyClick?.(); setIsMenuOpen(false); }} className="block text-base font-medium">Sobre Gaby</button>
+          
+          {/* Sección Clases en móvil */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clases</p>
+            <Link to="/clases" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
+              📚 Catálogo de clases
+            </Link>
+            <Link to="/#clases-gratis" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
+              🎁 Clases gratis
+            </Link>
+            <Link to="/basicos" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
+              📖 Básicos de Thermomix
+            </Link>
+            <Link to="/#de-mi-cocina" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
+              👩‍🍳 De mi cocina a tu cocina
+            </Link>
+            {user && (
+              <Link to="/mi-perfil" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
+                📊 Mi progreso
+              </Link>
+            )}
+          </div>
+
+          <Link to="/herramientas/calculadora-panadero" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>
+            🧮 Calculadora Panadera Pro
+          </Link>
+          <button onClick={() => { onSobreGabyClick?.(); setIsMenuOpen(false); }} className="block text-base font-medium">
+            Sobre Gaby
+          </button>
           {!user && (
-            <Link to="/auth" className="block text-base font-medium text-primary" onClick={() => setIsMenuOpen(false)}>Iniciar sesión</Link>
+            <Link to="/auth" className="block text-base font-medium text-primary" onClick={() => setIsMenuOpen(false)}>
+              Iniciar sesión
+            </Link>
           )}
         </nav>
       )}
