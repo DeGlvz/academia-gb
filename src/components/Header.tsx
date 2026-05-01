@@ -48,7 +48,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             Inicio
           </Link>
 
-          {/* 🔧 TAREA 2: Submenú Clases con opciones */}
+          {/* Submenú Clases */}
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -69,18 +69,24 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                     >
                       🎁 Clases gratis
                     </Link>
-                    <Link
-                      to="/basicos"
-                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                    >
-                      📖 Básicos de Thermomix
-                    </Link>
-                    <Link
-                      to="/#de-mi-cocina"
-                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                    >
-                      👩‍🍳 De mi cocina a tu cocina
-                    </Link>
+                    {/* 🔧 Básicos y De mi cocina SOLO visibles para usuarios logueados */}
+                    {user && (
+                      <>
+                        <Link
+                          to="/basicos"
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                        >
+                          📖 Básicos de Thermomix
+                        </Link>
+                        <Link
+                          to="/#de-mi-cocina"
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                        >
+                          👩‍🍳 De mi cocina a tu cocina
+                        </Link>
+                      </>
+                    )}
+                    {/* 🔧 Mi progreso SOLO visible para usuarios logueados */}
                     {user && (
                       <>
                         <DropdownMenuSeparator />
@@ -130,7 +136,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
 
         {/* Right side: Search + Cart + Auth */}
         <div className="flex items-center gap-2">
-          {/* Botón búsqueda */}
           <Button
             variant="ghost"
             size="icon"
@@ -201,12 +206,17 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             <Link to="/#clases-gratis" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
               🎁 Clases gratis
             </Link>
-            <Link to="/basicos" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
-              📖 Básicos de Thermomix
-            </Link>
-            <Link to="/#de-mi-cocina" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
-              👩‍🍳 De mi cocina a tu cocina
-            </Link>
+            {/* 🔧 Básicos y De mi cocina SOLO visibles para usuarios logueados */}
+            {user && (
+              <>
+                <Link to="/basicos" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
+                  📖 Básicos de Thermomix
+                </Link>
+                <Link to="/#de-mi-cocina" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
+                  👩‍🍳 De mi cocina a tu cocina
+                </Link>
+              </>
+            )}
             {user && (
               <Link to="/mi-perfil" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
                 📊 Mi progreso
