@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, User, Shield, LogOut, LogIn, Search, ChevronDown } from "lucide-react";
+import { Menu, X, User, Shield, LogOut, LogIn, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import logo from "@/assets/logo-gaby-bernal.png";
@@ -63,13 +63,13 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                     >
                       📚 Catálogo de clases
                     </Link>
+                    {/* 🔧 TAREA #4: Enlace a Recetas Gratis */}
                     <Link
-                      to="/#clases-gratis"
+                      to="/recetas-gratis"
                       className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
                     >
                       🎁 Clases gratis
                     </Link>
-                    {/* 🔧 Básicos y De mi cocina SOLO visibles para usuarios logueados */}
                     {user && (
                       <>
                         <Link
@@ -86,7 +86,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                         </Link>
                       </>
                     )}
-                    {/* 🔧 Mi progreso SOLO visible para usuarios logueados */}
                     {user && (
                       <>
                         <DropdownMenuSeparator />
@@ -136,6 +135,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
 
         {/* Right side: Search + Cart + Auth */}
         <div className="flex items-center gap-2">
+          {/* Botón búsqueda */}
           <Button
             variant="ghost"
             size="icon"
@@ -203,10 +203,9 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             <Link to="/clases" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
               📚 Catálogo de clases
             </Link>
-            <Link to="/#clases-gratis" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
+            <Link to="/recetas-gratis" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
               🎁 Clases gratis
             </Link>
-            {/* 🔧 Básicos y De mi cocina SOLO visibles para usuarios logueados */}
             {user && (
               <>
                 <Link to="/basicos" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
