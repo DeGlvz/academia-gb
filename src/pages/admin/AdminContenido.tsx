@@ -152,7 +152,7 @@ const AdminContenido = () => {
   }, []);
 
   const handleSaveLanding = (section: string) => {
-    toast({ title: `"${section}" guardado`, description: "Los cambios se aplicarán en la landing." });
+    toast({ title: `"${section}" guardado`, description: "Los cambios se aplicarán en la página principal." });
   };
 
   const generateSlug = (title: string) => {
@@ -283,14 +283,14 @@ const AdminContenido = () => {
     <div className="p-6 md:p-8 space-y-8">
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-foreground">Gestión de Contenido</h1>
-        <p className="text-muted-foreground text-sm mt-1">Edita la landing page y administra el blog</p>
+        <p className="text-muted-foreground text-sm mt-1">Edita la página principal y administra el blog</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="landing" className="gap-2">
             <Star className="h-4 w-4" />
-            Landing
+            Página principal
           </TabsTrigger>
           <TabsTrigger value="blog" className="gap-2">
             <FileText className="h-4 w-4" />
@@ -298,7 +298,7 @@ const AdminContenido = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* Tab: Landing - igual que antes */}
+        {/* Tab: Página principal */}
         <TabsContent value="landing" className="space-y-6">
           <Card>
             <CardHeader>
@@ -508,7 +508,7 @@ const AdminContenido = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Dialog para crear/editar artículo - CON EDITOR HTML COMPLETO */}
+      {/* Dialog para crear/editar artículo */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -526,7 +526,6 @@ const AdminContenido = () => {
               />
             </div>
 
-            {/* Título */}
             <div className="space-y-2">
               <Label>Título *</Label>
               <Input
@@ -535,8 +534,6 @@ const AdminContenido = () => {
                 placeholder="Título del artículo"
               />
             </div>
-
-            {/* Slug */}
             <div className="space-y-2">
               <Label>Slug (URL)</Label>
               <div className="flex gap-2">
@@ -554,8 +551,6 @@ const AdminContenido = () => {
                 </Button>
               </div>
             </div>
-
-            {/* Extracto */}
             <div className="space-y-2">
               <Label>Extracto (vista previa)</Label>
               <Textarea
@@ -565,8 +560,6 @@ const AdminContenido = () => {
                 rows={2}
               />
             </div>
-
-            {/* Editor HTML completo */}
             <div className="space-y-2">
               <Label>Contenido *</Label>
               
@@ -595,7 +588,6 @@ const AdminContenido = () => {
                 </Button>
               </div>
               
-              {/* Editor textarea */}
               <Textarea
                 id="blog-html-content"
                 value={htmlContent}
@@ -604,17 +596,10 @@ const AdminContenido = () => {
                   setFormData({ ...formData, content: e.target.value });
                 }}
                 rows={12}
-                placeholder="<p>Escribe el contenido del artículo en HTML...</p>
-<p>Ejemplo: <strong>texto en negritas</strong> y <em>cursivas</em></p>
-<img src='https://ejemplo.com/imagen.jpg' alt='descripción' />
-<ul>
-  <li>Punto 1</li>
-  <li>Punto 2</li>
-</ul>"
+                placeholder="<p>Escribe el contenido del artículo en HTML...</p>"
                 className="font-mono text-sm"
               />
               
-              {/* Uploader de imágenes para el contenido */}
               <div className="p-3 border rounded-md bg-muted/20">
                 <p className="text-sm font-medium mb-2">Insertar imagen en el contenido</p>
                 <ImageUpload
@@ -637,7 +622,6 @@ const AdminContenido = () => {
               </p>
             </div>
 
-            {/* Tags y tiempo de lectura */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tags (separados por coma)</Label>
@@ -657,7 +641,6 @@ const AdminContenido = () => {
               </div>
             </div>
 
-            {/* Publicar */}
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -669,7 +652,6 @@ const AdminContenido = () => {
               <Label htmlFor="is_published" className="cursor-pointer">Publicar inmediatamente</Label>
             </div>
 
-            {/* Botones */}
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
