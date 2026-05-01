@@ -37,12 +37,10 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b">
       <div className="container flex items-center justify-between h-16 px-4">
-        {/* Logo */}
         <Link to="/" className="flex items-center shrink-0">
           <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain max-w-[140px] sm:max-w-[180px]" />
         </Link>
 
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-4">
           <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">
             Inicio
@@ -63,21 +61,21 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                     >
                       📚 Catálogo de clases
                     </Link>
-                    {/* 🔧 TAREA #4: Enlace a Recetas Gratis */}
                     <Link
                       to="/recetas-gratis"
                       className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
                     >
                       🎁 Clases gratis
                     </Link>
+                    {/* 🔧 TAREA #15: Blog visible para todos */}
+                    <Link
+                      to="/basicos"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      📖 Básicos de Thermomix
+                    </Link>
                     {user && (
                       <>
-                        <Link
-                          to="/basicos"
-                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                        >
-                          📖 Básicos de Thermomix
-                        </Link>
                         <Link
                           to="/#de-mi-cocina"
                           className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
@@ -124,7 +122,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* Sobre Gaby (Modal) */}
           <button
             onClick={onSobreGabyClick}
             className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors"
@@ -133,9 +130,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
           </button>
         </nav>
 
-        {/* Right side: Search + Cart + Auth */}
         <div className="flex items-center gap-2">
-          {/* Botón búsqueda */}
           <Button
             variant="ghost"
             size="icon"
@@ -185,7 +180,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             </Button>
           )}
 
-          {/* Mobile menu button */}
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -197,7 +191,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
         <nav className="md:hidden border-t bg-background px-4 py-4 space-y-3 animate-fade-in">
           <Link to="/" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
           
-          {/* Sección Clases en móvil */}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clases</p>
             <Link to="/clases" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
@@ -206,11 +199,11 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             <Link to="/recetas-gratis" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
               🎁 Clases gratis
             </Link>
+            <Link to="/basicos" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
+              📖 Básicos de Thermomix
+            </Link>
             {user && (
               <>
-                <Link to="/basicos" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
-                  📖 Básicos de Thermomix
-                </Link>
                 <Link to="/#de-mi-cocina" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
                   👩‍🍳 De mi cocina a tu cocina
                 </Link>
