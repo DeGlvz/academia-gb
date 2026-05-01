@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Play, Lock, Clock, BookOpen, ShoppingCart, CheckCircle, User, Check, FileText, Video, Code } from "lucide-react";
+import { ArrowLeft, Play, Lock, Clock, BookOpen, ShoppingCart, CheckCircle, User, Check, FileText, Video, Code, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useClassBySlug } from "@/hooks/useClasses";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { recordPurchaseAttempt } from "@/lib/purchaseAttempts";
 import { Loader2 } from "lucide-react";
@@ -22,10 +23,18 @@ import {
 const ClaseDetalle = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: classData, isLoading } = useClassBySlug(slug);
-  const isEnrolled = false; // TODO: check enrolled_classes
+  const { user } = useAuth();
+  const isEnrolled = false; // TODO: check enrolled_classes for paid classes
   const { addItem, isInCart } = useCart();
   const { toast } = useToast();
   const inCart = classData ? isInCart(classData.id) : false;
+
+  // 🔧 CORREGIDO: Determinar si el usuario tiene acceso
+  // - Si la clase es gratis (price === 0) Y el usuario está logueado → acceso completo
+  // - Si la clase es gratis Y NO está logueado → mostrar mensaje de login
+  // - Si la clase es de paga → seguir la lógica normal (isEnrolled o comprar)
+  const isFree = classData?.price === 0;
+  const hasAccess = isFree ? !!user : isEnrolled;
 
   const handleAdd = () => {
     if (classData) {
@@ -90,7 +99,26 @@ const ClaseDetalle = () => {
 
   // Función para renderizar el contenido de la lección según tipo
   const renderLessonContent = (lesson: any) => {
-    if (!isEnrolled && !lesson.is_free) {
+    if (!hasAccess && !lesson.is_free) {
+      if (!user && isFree) {
+        return (
+          <div className="text-center space-y-4 py-8">
+            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto">
+              <LogIn className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold">Inicia sesión para acceder</h3>
+            <p className="text-muted-foreground">Esta clase es gratuita, pero necesitas una cuenta para ver el contenido.</p>
+            <div className="flex gap-3 justify-center">
+              <Button asChild variant="default">
+                <Link to="/auth">Iniciar sesión</Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/auth">Registrarme</Link>
+              </Button>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Lock className="h-4 w-4" />
@@ -102,7 +130,6 @@ const ClaseDetalle = () => {
     switch (lesson.lesson_type) {
       case "video":
         if (lesson.content_url) {
-          // Detectar si es YouTube, Vimeo o video directo
           const isYouTube = lesson.content_url.includes("youtube.com") || lesson.content_url.includes("youtu.be");
           const isVimeo = lesson.content_url.includes("vimeo.com");
           
@@ -126,9 +153,6 @@ const ClaseDetalle = () => {
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 />
               </div>
-              {lesson.video_thumbnail && (
-                <p className="text-xs text-muted-foreground">Miniatura: {lesson.video_thumbnail}</p>
-              )}
             </div>
           );
         }
@@ -163,7 +187,6 @@ const ClaseDetalle = () => {
         );
 
       default:
-        // Fallback para lecciones sin tipo específico
         return (
           <div className="space-y-2">
             <p className="text-muted-foreground">{lesson.description || "Contenido de la lección"}</p>
@@ -196,24 +219,42 @@ const ClaseDetalle = () => {
         <div className="container px-4 py-8 md:py-12">
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
+              {/* Imagen principal con bloqueo condicional */}
               <div className="relative aspect-video bg-foreground/5 rounded-xl overflow-hidden border">
                 <img
                   src={classData.image_url || "/placeholder.svg"}
                   alt={classData.title}
-                  className={`w-full h-full object-cover ${!isEnrolled ? "opacity-60 blur-sm" : ""}`}
+                  className={`w-full h-full object-cover ${!hasAccess ? "opacity-60 blur-sm" : ""}`}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  {isEnrolled ? (
+                  {hasAccess ? (
                     <button className="h-16 w-16 md:h-20 md:w-20 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground flex items-center justify-center shadow-xl transition-all hover:scale-105">
                       <Play className="h-7 w-7 md:h-8 md:w-8 ml-1" />
                     </button>
+                  ) : !user && isFree ? (
+                    <div className="text-center space-y-3">
+                      <div className="h-16 w-16 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center shadow-xl mx-auto">
+                        <LogIn className="h-7 w-7 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-medium text-foreground bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg">
+                        Inicia sesión para acceder gratis
+                      </p>
+                      <div className="flex gap-2 justify-center">
+                        <Button asChild size="sm">
+                          <Link to="/auth">Iniciar sesión</Link>
+                        </Button>
+                        <Button asChild variant="outline" size="sm">
+                          <Link to="/auth">Registrarme</Link>
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="text-center space-y-3">
                       <div className="h-16 w-16 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center shadow-xl mx-auto">
                         <Lock className="h-7 w-7 text-muted-foreground" />
                       </div>
                       <p className="text-sm font-medium text-foreground bg-background/80 backdrop-blur-sm px-4 py-2 rounded-lg">
-                        Adquiere esta clase para ver el contenido
+                        {isFree ? "Inicia sesión gratis" : "Adquiere esta clase para ver el contenido"}
                       </p>
                     </div>
                   )}
@@ -228,7 +269,8 @@ const ClaseDetalle = () => {
                       {m}
                     </span>
                   ))}
-                  {isEnrolled && (
+                  {isFree && <Badge className="bg-green-500 text-white">🎁 Gratis</Badge>}
+                  {hasAccess && !isFree && (
                     <Badge className="bg-primary text-primary-foreground font-body">Inscrita ✓</Badge>
                   )}
                 </div>
@@ -249,11 +291,12 @@ const ClaseDetalle = () => {
                 </div>
               </div>
 
+              {/* Lista de lecciones */}
               <div className="space-y-4">
                 <h2 className="text-lg font-semibold text-foreground">Contenido del curso ({totalLessons} lecciones)</h2>
                 <div className="space-y-2">
                   {classData.lessons.map((lesson, index) => {
-                    const canAccess = isEnrolled || lesson.is_free;
+                    const canAccess = hasAccess || lesson.is_free;
                     return (
                       <Dialog key={lesson.id}>
                         <DialogTrigger asChild>
@@ -268,7 +311,7 @@ const ClaseDetalle = () => {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <p className={`text-sm font-medium truncate ${canAccess ? "text-foreground" : "text-muted-foreground"}`}>{lesson.title}</p>
-                                  {lesson.is_free && !isEnrolled && (
+                                  {lesson.is_free && !hasAccess && isFree && !user && (
                                     <Badge variant="outline" className="text-[10px] shrink-0 font-body border-primary text-primary">Gratis</Badge>
                                   )}
                                 </div>
@@ -284,6 +327,8 @@ const ClaseDetalle = () => {
                                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                                     <Play className="h-3.5 w-3.5 text-primary ml-0.5" />
                                   </div>
+                                ) : !user && isFree ? (
+                                  <LogIn className="h-4 w-4 text-muted-foreground" />
                                 ) : (
                                   <Lock className="h-4 w-4 text-muted-foreground" />
                                 )}
@@ -312,27 +357,49 @@ const ClaseDetalle = () => {
               </div>
             </div>
 
+            {/* Sidebar */}
             <div className="lg:col-span-1">
               <div className="sticky top-20 space-y-4">
-                <Card className="border-primary/20">
+                <Card className={isFree ? "border-green-500/50" : "border-primary/20"}>
                   <CardContent className="p-6 space-y-5">
                     <div className="text-center space-y-1">
-                      <p className="text-3xl font-bold text-foreground">
-                        ${classData.price} <span className="text-sm font-normal text-muted-foreground">MXN</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground">Acceso de por vida</p>
+                      {isFree ? (
+                        <>
+                          <p className="text-3xl font-bold text-green-600">GRATIS</p>
+                          <p className="text-xs text-muted-foreground">Acceso de por vida</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-3xl font-bold text-foreground">
+                            ${classData.price} <span className="text-sm font-normal text-muted-foreground">MXN</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground">Acceso de por vida</p>
+                        </>
+                      )}
                     </div>
 
-                    {isEnrolled ? (
+                    {hasAccess ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 text-primary text-sm font-medium justify-center">
                           <CheckCircle className="h-5 w-5" />
-                          Ya estás inscrita
+                          {isFree ? "Clase gratuita desbloqueada" : "Ya estás inscrita"}
                         </div>
                         <Button className="w-full gap-2 font-body" size="lg">
                           <Play className="h-4 w-4" />
-                          Continuar clase
+                          Empezar clase
                         </Button>
+                      </div>
+                    ) : !user && isFree ? (
+                      <div className="space-y-3">
+                        <Button className="w-full gap-2 font-body" size="lg" asChild>
+                          <Link to="/auth">
+                            <LogIn className="h-4 w-4" />
+                            Iniciar sesión gratis
+                          </Link>
+                        </Button>
+                        <p className="text-xs text-center text-muted-foreground">
+                          Regístrate gratis para acceder a esta clase
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-3">
