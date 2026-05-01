@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useRef } from "react"; // 🔧 Importado
+import { useRef } from "react";
 import { ArrowLeft, Play, Lock, Clock, BookOpen, ShoppingCart, CheckCircle, User, Check, FileText, Video, Code, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,12 +25,12 @@ const ClaseDetalle = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: classData, isLoading } = useClassBySlug(slug);
   const { user } = useAuth();
-  const isEnrolled = false; // TODO: check enrolled_classes for paid classes
+  const isEnrolled = false;
   const { addItem, isInCart } = useCart();
   const { toast } = useToast();
   const inCart = classData ? isInCart(classData.id) : false;
 
-  // 🔧 Referencia para scroll a lecciones
+  // 🔧 Ref para scroll a lecciones
   const lessonsRef = useRef<HTMLDivElement>(null);
 
   const scrollToLessons = () => {
