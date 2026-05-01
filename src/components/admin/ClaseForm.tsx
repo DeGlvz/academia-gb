@@ -114,7 +114,7 @@ const ClaseForm = ({ initialData, onSuccess }: ClaseFormProps) => {
         setActiveTab("lecciones");
       } else {
         toast({ title: "Clase guardada", description: "La clase ha sido guardada correctamente." });
-        onSuccess();
+        // onSuccess(); // COMENTADO: Evita que se cierre el modal automáticamente
       }
     },
     onError: (error: any) => {
@@ -218,9 +218,6 @@ const ClaseForm = ({ initialData, onSuccess }: ClaseFormProps) => {
               </div>
               <LessonManager
                 classId={classId || initialData?.id}
-                onSuccess={() => {
-                  queryClient.invalidateQueries({ queryKey: ["admin-clases"] });
-                }}
               />
             </>
           ) : (
