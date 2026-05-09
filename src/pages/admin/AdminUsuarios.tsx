@@ -479,6 +479,7 @@ const AdminUsuarios = () => {
       <p className="text-xs text-muted-foreground">{filtered.length} alumno{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}</p>
 
       <Card>
+              <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -492,7 +493,7 @@ const AdminUsuarios = () => {
                   <th className="p-3 font-medium text-muted-foreground text-center">Progreso</th>
                   <th className="p-3 font-medium text-muted-foreground text-right">Total</th>
                   <th className="p-3 w-10"></th>
-                </table>
+                </tr>
               </thead>
               <tbody>
                 {filtered.map((u) => (
@@ -603,6 +604,7 @@ const AdminUsuarios = () => {
             </table>
           </div>
         </CardContent>
+      </Card>
       </Card>
 
       <Dialog open={!!accessUser} onOpenChange={(open) => !open && setAccessUser(null)}>
