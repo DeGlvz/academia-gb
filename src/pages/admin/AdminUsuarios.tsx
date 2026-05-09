@@ -81,6 +81,8 @@ const AdminUsuarios = () => {
   });
   const [isCreating, setIsCreating] = useState(false);
 
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
   const loadUsers = async () => {
     setIsLoading(true);
     try {
@@ -343,40 +345,59 @@ const AdminUsuarios = () => {
   };
 
   const handleCreateUser = async () => {
-    if (!newUser.email || !newUser.full_name) {
-      toast({ title: "Error", description: "Email y nombre son requeridos", variant: "destructive" });
+    if (!newUser.email || !newUser.password || !newUser.full_name) {
+      toast({ title: "Error", description: "Todos los campos son requeridos", variant: "destructive" });
       return;
     }
 
     setIsCreating(true);
     try {
-      const { data: existingUser, error: checkError } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("email", newUser.email)
-        .single();
+      // 1. Crear usuario en auth.users usando service_role
+      const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          email: newUser.email,
+          password: newUser.password,
+          email_confirm: true,
+          user_metadata: { full_name: newUser.full_name },
+        }),
+      });
 
-      if (existingUser) {
-        toast({ title: "Error", description: "Ya existe un usuario con ese email", variant: "destructive" });
-        return;
+      const authResult = await response.json();
+
+      if (!response.ok) {
+        throw new Error(authResult.msg || "Error al crear usuario");
       }
 
-      const tempId = crypto.randomUUID();
+      const userId = authResult.id;
+
+      // 2. Crear perfil en profiles (SIN columna email)
       const { error: profileError } = await supabase
         .from("profiles")
         .insert({
-          user_id: tempId,
+          user_id: userId,
           full_name: newUser.full_name,
-          email: newUser.email,
           role: newUser.role,
-          account_status: "pendiente",
+          account_status: "activo",
         });
 
       if (profileError) throw profileError;
 
+      // 3. Si es admin, agregar a user_roles
+      if (newUser.role === "admin") {
+        await supabase
+          .from("user_roles")
+          .insert({ user_id: userId, role: "admin" });
+      }
+
       toast({ 
-        title: "Usuario registrado", 
-        description: `Se ha creado un perfil para ${newUser.email}. El usuario debe completar su registro.` 
+        title: "✅ Usuario creado", 
+        description: `${newUser.email} creado correctamente` 
       });
       
       setCreateUserOpen(false);
@@ -910,8 +931,7 @@ const AdminUsuarios = () => {
           <DialogHeader>
             <DialogTitle>Crear nuevo usuario</DialogTitle>
             <DialogDescription>
-              Completa los datos para crear un nuevo usuario. Se creará un perfil pendiente.
-              El usuario deberá completar su registro.
+              Completa los datos para crear un nuevo usuario.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -923,6 +943,16 @@ const AdminUsuarios = () => {
                 value={newUser.email}
                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Contraseña *</Label>
+              <Input
+                type="password"
+                placeholder="********"
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
             </div>
             <div className="space-y-2">
               <Label>Nombre completo *</Label>
