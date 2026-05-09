@@ -71,6 +71,7 @@ const AdminUsuarios = () => {
   const [crmNotes, setCrmNotes] = useState<any[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
+  // Estados para crear usuario
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     email: "",
@@ -166,6 +167,24 @@ const AdminUsuarios = () => {
       toast({ title: "Error", description: "No se pudieron cargar los usuarios", variant: "destructive" });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadCrmNotes = async (userId: string) => {
+    setLoadingNotes(true);
+    try {
+      const { data, error } = await supabase
+        .from("crm_notes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setCrmNotes(data || []);
+    } catch (error) {
+      console.error("Error loading CRM notes:", error);
+    } finally {
+      setLoadingNotes(false);
     }
   };
 
@@ -334,6 +353,7 @@ const AdminUsuarios = () => {
   const openProfileModal = (user: UserWithDetails) => {
     setSelectedUser(user);
     setProfileModalOpen(true);
+    loadCrmNotes(user.id);
     setActiveProfileTab("resumen");
     setNewNote("");
     setNotePotential("bajo");
@@ -359,6 +379,7 @@ const AdminUsuarios = () => {
       setNotePotential("bajo");
       setNoteNextAction("whatsapp");
       setNoteNextDate("");
+      loadCrmNotes(selectedUser.id);
     } catch (error) {
       console.error("Error saving note:", error);
       toast({ title: "Error", description: "No se pudo guardar la nota", variant: "destructive" });
@@ -416,6 +437,7 @@ const AdminUsuarios = () => {
 
   return (
     <div className="p-6 md:p-8 space-y-6">
+      {/* Cabecera con botón Crear usuario */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Control de Alumnos</h1>
@@ -427,6 +449,7 @@ const AdminUsuarios = () => {
         </Button>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { value: users.length, label: "Total", icon: User },
@@ -445,6 +468,7 @@ const AdminUsuarios = () => {
         ))}
       </div>
 
+      {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -460,6 +484,7 @@ const AdminUsuarios = () => {
       {showFilters && (
         <Card>
           <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+            {/* Filtros roles, estados, etc. */}
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Preferencia</Label>
               <Select value={filterPref} onValueChange={(v) => setFilterPref(v as any)}>
@@ -507,6 +532,7 @@ const AdminUsuarios = () => {
 
       <p className="text-xs text-muted-foreground">{filtered.length} alumno{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}</p>
 
+      {/* Tabla de usuarios */}
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -535,21 +561,13 @@ const AdminUsuarios = () => {
                         </Avatar>
                         <div>
                           <div className="flex items-center gap-1">
-                            <Button 
-                              variant="link" 
-                              className="font-medium p-0 h-auto text-foreground hover:text-primary"
-                              onClick={() => openProfileModal(u)}
-                            >
+                            <Button variant="link" className="font-medium p-0 h-auto text-foreground hover:text-primary" onClick={() => openProfileModal(u)}>
                               {u.full_name}
                             </Button>
                             <TooltipProvider>
                               <Tooltip>
-                                <TooltipTrigger>
-                                  <Info className="h-3 w-3 text-muted-foreground" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p className="text-xs">Haz clic para ver perfil completo</p>
-                                </TooltipContent>
+                                <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground" /></TooltipTrigger>
+                                <TooltipContent><p className="text-xs">Haz clic para ver perfil completo</p></TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                           </div>
@@ -562,21 +580,13 @@ const AdminUsuarios = () => {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="outline" size="sm" className={`h-6 text-xs gap-1 ${getRoleColor(u.role)}`}>
-                            {getRoleIcon(u.role)}
-                            {u.role === "admin" ? "Admin" : u.role === "moderador" ? "Moderador" : "Alumno"}
-                            <ChevronDown className="h-3 w-3" />
+                            {getRoleIcon(u.role)}{u.role === "admin" ? "Admin" : u.role === "moderador" ? "Moderador" : "Alumno"}<ChevronDown className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => updateUserRole(u.id, "alumno")}>
-                            <User className="h-3.5 w-3.5 mr-2" /> Alumno
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateUserRole(u.id, "moderador")}>
-                            <ShieldOff className="h-3.5 w-3.5 mr-2" /> Moderador
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateUserRole(u.id, "admin")}>
-                            <Shield className="h-3.5 w-3.5 mr-2" /> Admin
-                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserRole(u.id, "alumno")}><User className="h-3.5 w-3.5 mr-2" /> Alumno</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserRole(u.id, "moderador")}><ShieldOff className="h-3.5 w-3.5 mr-2" /> Moderador</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateUserRole(u.id, "admin")}><Shield className="h-3.5 w-3.5 mr-2" /> Admin</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -591,27 +601,17 @@ const AdminUsuarios = () => {
                     <td className="p-3 text-center font-medium">{u.enrolled_count}</td>
                     <td className="p-3 text-center">
                       <div className="flex flex-col items-center gap-1">
-                        <span className={`text-xs font-medium ${getProgressColor(u.lesson_progress)}`}>
-                          {u.lesson_progress}%
-                        </span>
+                        <span className={`text-xs font-medium ${getProgressColor(u.lesson_progress)}`}>{u.lesson_progress}%</span>
                         <Progress value={u.lesson_progress} className="h-1.5 w-16" />
                       </div>
                     </td>
                     <td className="p-3 text-right font-medium">{formatCurrency(u.total_spent)}</td>
                     <td className="p-3">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openAccessDialog(u)}>
-                            <BookOpen className="h-3.5 w-3.5 mr-2" /> Asignar accesos
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openProfileModal(u)}>
-                            <User className="h-3.5 w-3.5 mr-2" /> Ver perfil completo
-                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openAccessDialog(u)}><BookOpen className="h-3.5 w-3.5 mr-2" /> Asignar accesos</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openProfileModal(u)}><User className="h-3.5 w-3.5 mr-2" /> Ver perfil completo</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -626,57 +626,28 @@ const AdminUsuarios = () => {
       {/* Dialog: Asignar accesos */}
       <Dialog open={!!accessUser} onOpenChange={(open) => !open && setAccessUser(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Asignar accesos — {accessUser?.full_name}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Asignar accesos — {accessUser?.full_name}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">Marca las clases a las que este alumno tendrá acceso.</p>
-
           <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
-            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-              <CreditCard className="h-3.5 w-3.5" /> Datos del pago (opcional)
-            </p>
+            <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5"><CreditCard className="h-3.5 w-3.5" /> Datos del pago (opcional)</p>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Nº Pedido</Label>
-                <Input placeholder="GBC-00001" value={paymentOrderNumber} onChange={(e) => setPaymentOrderNumber(e.target.value)} className="h-8 text-xs" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs text-muted-foreground">Fecha de pago</Label>
-                <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className="h-8 text-xs" />
-              </div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Nº Pedido</Label><Input placeholder="GBC-00001" value={paymentOrderNumber} onChange={(e) => setPaymentOrderNumber(e.target.value)} className="h-8 text-xs" /></div>
+              <div className="space-y-1"><Label className="text-xs text-muted-foreground">Fecha de pago</Label><Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} className="h-8 text-xs" /></div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Método de pago</Label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Transferencia">Transferencia bancaria</SelectItem>
-                  <SelectItem value="Efectivo">Efectivo</SelectItem>
-                  <SelectItem value="Tarjeta">Tarjeta</SelectItem>
-                  <SelectItem value="PayPal">PayPal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="space-y-1"><Label className="text-xs text-muted-foreground">Método de pago</Label><Select value={paymentMethod} onValueChange={setPaymentMethod}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Transferencia">Transferencia bancaria</SelectItem><SelectItem value="Efectivo">Efectivo</SelectItem><SelectItem value="Tarjeta">Tarjeta</SelectItem><SelectItem value="PayPal">PayPal</SelectItem></SelectContent></Select></div>
           </div>
-
           <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
             {paidClasses.map((c) => {
               const checked = accessClasses.includes(c.id);
               return (
                 <label key={c.id} className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${checked ? "border-primary bg-primary/5" : "border-border hover:bg-muted/30"}`}>
                   <Checkbox checked={checked} onCheckedChange={() => toggleAccess(c.id)} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{c.title}</p>
-                    <p className="text-xs text-muted-foreground">{c.category} · {formatCurrency(c.price)}</p>
-                  </div>
+                  <div className="flex-1 min-w-0"><p className="text-sm font-medium text-foreground truncate">{c.title}</p><p className="text-xs text-muted-foreground">{c.category} · {formatCurrency(c.price)}</p></div>
                 </label>
               );
             })}
           </div>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-            <Button onClick={saveAccess}>Guardar accesos</Button>
-          </DialogFooter>
+          <DialogFooter><DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose><Button onClick={saveAccess}>Guardar accesos</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -687,182 +658,33 @@ const AdminUsuarios = () => {
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {selectedUser.full_name.split(" ").map((n) => n[0]).join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div>{selectedUser.full_name}</div>
-                    <DialogDescription>{selectedUser.email}</DialogDescription>
-                  </div>
+                  <Avatar className="h-10 w-10"><AvatarFallback className="bg-primary/10 text-primary">{selectedUser.full_name.split(" ").map((n) => n[0]).join("")}</AvatarFallback></Avatar>
+                  <div><div>{selectedUser.full_name}</div><DialogDescription>{selectedUser.email}</DialogDescription></div>
                 </DialogTitle>
               </DialogHeader>
-
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                <div className="text-center p-2 bg-muted/30 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Volumen</p>
-                  <p className="text-sm font-bold">{formatCurrency(selectedUser.total_spent)}</p>
-                </div>
-                <div className="text-center p-2 bg-muted/30 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Ticket promedio</p>
-                  <p className="text-sm font-bold">{formatCurrency(selectedUser.total_spent / (selectedUser.enrolled_count || 1))}</p>
-                </div>
-                <div className="text-center p-2 bg-muted/30 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Clases</p>
-                  <p className="text-sm font-bold">{selectedUser.enrolled_count}</p>
-                </div>
-                <div className="text-center p-2 bg-muted/30 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Progreso</p>
-                  <p className="text-sm font-bold">{selectedUser.lesson_progress}%</p>
-                </div>
-                <div className="text-center p-2 bg-muted/30 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Matrícula</p>
-                  <p className="text-sm font-bold">{selectedUser.created_at}</p>
-                </div>
+                <div className="text-center p-2 bg-muted/30 rounded-lg"><p className="text-xs text-muted-foreground">Volumen</p><p className="text-sm font-bold">{formatCurrency(selectedUser.total_spent)}</p></div>
+                <div className="text-center p-2 bg-muted/30 rounded-lg"><p className="text-xs text-muted-foreground">Ticket promedio</p><p className="text-sm font-bold">{formatCurrency(selectedUser.total_spent / (selectedUser.enrolled_count || 1))}</p></div>
+                <div className="text-center p-2 bg-muted/30 rounded-lg"><p className="text-xs text-muted-foreground">Clases</p><p className="text-sm font-bold">{selectedUser.enrolled_count}</p></div>
+                <div className="text-center p-2 bg-muted/30 rounded-lg"><p className="text-xs text-muted-foreground">Progreso</p><p className="text-sm font-bold">{selectedUser.lesson_progress}%</p></div>
+                <div className="text-center p-2 bg-muted/30 rounded-lg"><p className="text-xs text-muted-foreground">Matrícula</p><p className="text-sm font-bold">{selectedUser.created_at}</p></div>
               </div>
-
               <Tabs value={activeProfileTab} onValueChange={setActiveProfileTab}>
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="resumen">📊 Resumen</TabsTrigger>
-                  <TabsTrigger value="clases">📚 Clases</TabsTrigger>
-                  <TabsTrigger value="crm">📝 CRM</TabsTrigger>
-                </TabsList>
-
+                <TabsList className="grid w-full grid-cols-3"><TabsTrigger value="resumen">📊 Resumen</TabsTrigger><TabsTrigger value="clases">📚 Clases</TabsTrigger><TabsTrigger value="crm">📝 CRM</TabsTrigger></TabsList>
                 <TabsContent value="resumen" className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="border rounded-lg p-3">
-                      <p className="text-xs text-muted-foreground">Progreso de clases</p>
-                      <Progress value={selectedUser.lesson_progress} className="h-2 mt-2" />
-                      <p className="text-xs mt-1">{selectedUser.lesson_progress}% completado</p>
-                    </div>
-                    <div className="border rounded-lg p-3">
-                      <p className="text-xs text-muted-foreground">Preferencias</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {selectedUser.food_preferences.length > 0 ? (
-                          selectedUser.food_preferences.map(p => <Badge key={p} variant="outline" className="text-xs">{p}</Badge>)
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Sin preferencias</span>
-                        )}
-                      </div>
-                    </div>
+                    <div className="border rounded-lg p-3"><p className="text-xs text-muted-foreground">Progreso de clases</p><Progress value={selectedUser.lesson_progress} className="h-2 mt-2" /><p className="text-xs mt-1">{selectedUser.lesson_progress}% completado</p></div>
+                    <div className="border rounded-lg p-3"><p className="text-xs text-muted-foreground">Preferencias</p><div className="flex flex-wrap gap-1 mt-1">{selectedUser.food_preferences.length > 0 ? selectedUser.food_preferences.map(p => <Badge key={p} variant="outline" className="text-xs">{p}</Badge>) : <span className="text-xs text-muted-foreground">Sin preferencias</span>}</div></div>
                   </div>
-                  <div className="border rounded-lg p-3">
-                    <p className="text-xs text-muted-foreground">Rol y Estado</p>
-                    <div className="flex gap-2 mt-2">
-                      <Badge className={selectedUser.role === "admin" ? "bg-purple-100 text-purple-700" : selectedUser.role === "moderador" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
-                        {selectedUser.role === "admin" ? "👑 Admin" : selectedUser.role === "moderador" ? "🛡️ Moderador" : "👤 Alumno"}
-                      </Badge>
-                      <Badge className={getStatusColor(selectedUser.account_status)}>
-                        {selectedUser.account_status === "activo" && "🟢 Activo"}
-                        {selectedUser.account_status === "inactivo" && "⚪ Inactivo"}
-                        {selectedUser.account_status === "suspendido" && "🔴 Suspendido"}
-                        {selectedUser.account_status === "pendiente" && "🟡 Pendiente"}
-                      </Badge>
-                    </div>
-                  </div>
+                  <div className="border rounded-lg p-3"><p className="text-xs text-muted-foreground">Rol y Estado</p><div className="flex gap-2 mt-2"><Badge className={selectedUser.role === "admin" ? "bg-purple-100 text-purple-700" : selectedUser.role === "moderador" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>{selectedUser.role === "admin" ? "👑 Admin" : selectedUser.role === "moderador" ? "🛡️ Moderador" : "👤 Alumno"}</Badge><Badge className={getStatusColor(selectedUser.account_status)}>{selectedUser.account_status === "activo" && "🟢 Activo"}{selectedUser.account_status === "inactivo" && "⚪ Inactivo"}{selectedUser.account_status === "suspendido" && "🔴 Suspendido"}{selectedUser.account_status === "pendiente" && "🟡 Pendiente"}</Badge></div></div>
                 </TabsContent>
-
-                <TabsContent value="clases">
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {selectedUser.enrolled_classes.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8">Sin clases asignadas</p>
-                    ) : (
-                      selectedUser.enrolled_classes.map((enrollment) => (
-                        <div key={enrollment.class_id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <p className="font-medium">{enrollment.classes?.title}</p>
-                            <p className="text-xs text-muted-foreground">{enrollment.classes?.category}</p>
-                          </div>
-                          <Button variant="outline" size="sm" asChild>
-                            <a href={`/clases/${enrollment.classes?.slug}`} target="_blank" rel="noopener noreferrer">Ver clase</a>
-                          </Button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </TabsContent>
-
+                <TabsContent value="clases"><div className="space-y-2 max-h-96 overflow-y-auto">{selectedUser.enrolled_classes.length === 0 ? <p className="text-center text-muted-foreground py-8">Sin clases asignadas</p> : selectedUser.enrolled_classes.map((enrollment) => (<div key={enrollment.class_id} className="flex items-center justify-between p-3 border rounded-lg"><div><p className="font-medium">{enrollment.classes?.title}</p><p className="text-xs text-muted-foreground">{enrollment.classes?.category}</p></div><Button variant="outline" size="sm" asChild><a href={`/clases/${enrollment.classes?.slug}`} target="_blank" rel="noopener noreferrer">Ver clase</a></Button></div>))}</div></TabsContent>
                 <TabsContent value="crm" className="space-y-4">
-                  <div className="border rounded-lg p-4 space-y-3">
-                    <p className="text-sm font-semibold">Agregar nota de seguimiento</p>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <Label className="text-xs">Potencial</Label>
-                        <Select value={notePotential} onValueChange={setNotePotential}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="alto">🔥 Alto potencial</SelectItem>
-                            <SelectItem value="medio">🟡 Medio potencial</SelectItem>
-                            <SelectItem value="bajo">⚪ Bajo potencial</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Próxima acción</Label>
-                        <Select value={noteNextAction} onValueChange={setNoteNextAction}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="whatsapp">📱 Enviar WhatsApp</SelectItem>
-                            <SelectItem value="email">📧 Enviar email</SelectItem>
-                            <SelectItem value="llamada">📞 Llamada</SelectItem>
-                            <SelectItem value="descuento">🎁 Ofrecer descuento</SelectItem>
-                            <SelectItem value="reunion">🤝 Reunión</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Fecha seguimiento</Label>
-                        <Input type="date" value={noteNextDate} onChange={(e) => setNoteNextDate(e.target.value)} className="h-8 text-xs" />
-                      </div>
-                    </div>
-                    <Textarea placeholder="Escribe la nota..." value={newNote} onChange={(e) => setNewNote(e.target.value)} rows={2} className="text-sm" />
-                    <Button size="sm" onClick={saveCrmNote} disabled={!newNote.trim()}>Guardar nota</Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold">Historial de notas</p>
-                    {loadingNotes ? (
-                      <p className="text-center text-muted-foreground py-4">Cargando notas...</p>
-                    ) : crmNotes.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-4">No hay notas de seguimiento</p>
-                    ) : (
-                      crmNotes.map((note) => (
-                        <div key={note.id} className="border rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-xs">
-                                {note.potential_level === "alto" && "🔥 Alto"}
-                                {note.potential_level === "medio" && "🟡 Medio"}
-                                {note.potential_level === "bajo" && "⚪ Bajo"}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {note.next_action === "whatsapp" && "📱 WhatsApp"}
-                                {note.next_action === "email" && "📧 Email"}
-                                {note.next_action === "llamada" && "📞 Llamada"}
-                                {note.next_action === "descuento" && "🎁 Descuento"}
-                                {note.next_action === "reunion" && "🤝 Reunión"}
-                              </Badge>
-                              {note.next_action_date && <span className="text-xs text-muted-foreground">📅 {new Date(note.next_action_date).toLocaleDateString("es-MX")}</span>}
-                            </div>
-                            <span className="text-xs text-muted-foreground">{new Date(note.created_at).toLocaleDateString("es-MX")}</span>
-                          </div>
-                          <p className="text-sm">{note.note}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant={note.status === "pendiente" ? "secondary" : "default"} className="text-xs">
-                              {note.status === "pendiente" ? "⏳ Pendiente" : "✅ Completada"}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  <div className="border rounded-lg p-4 space-y-3"><p className="text-sm font-semibold">Agregar nota de seguimiento</p><div className="grid grid-cols-3 gap-3"><div><Label className="text-xs">Potencial</Label><Select value={notePotential} onValueChange={setNotePotential}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="alto">🔥 Alto potencial</SelectItem><SelectItem value="medio">🟡 Medio potencial</SelectItem><SelectItem value="bajo">⚪ Bajo potencial</SelectItem></SelectContent></Select></div><div><Label className="text-xs">Próxima acción</Label><Select value={noteNextAction} onValueChange={setNoteNextAction}><SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="whatsapp">📱 Enviar WhatsApp</SelectItem><SelectItem value="email">📧 Enviar email</SelectItem><SelectItem value="llamada">📞 Llamada</SelectItem><SelectItem value="descuento">🎁 Ofrecer descuento</SelectItem></SelectContent></Select></div><div><Label className="text-xs">Fecha seguimiento</Label><Input type="date" value={noteNextDate} onChange={(e) => setNoteNextDate(e.target.value)} className="h-8 text-xs" /></div></div><Textarea placeholder="Escribe la nota..." value={newNote} onChange={(e) => setNewNote(e.target.value)} rows={2} className="text-sm" /><Button size="sm" onClick={saveCrmNote} disabled={!newNote.trim()}>Guardar nota</Button></div>
+                  <div className="space-y-2"><p className="text-sm font-semibold">Historial de notas</p>{loadingNotes ? <p className="text-center text-muted-foreground py-4">Cargando notas...</p> : crmNotes.length === 0 ? <p className="text-center text-muted-foreground py-4">No hay notas de seguimiento</p> : crmNotes.map((note) => (<div key={note.id} className="border rounded-lg p-3"><div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><Badge variant="outline" className="text-xs">{note.potential_level === "alto" && "🔥 Alto"}{note.potential_level === "medio" && "🟡 Medio"}{note.potential_level === "bajo" && "⚪ Bajo"}</Badge><Badge variant="outline" className="text-xs">{note.next_action === "whatsapp" && "📱 WhatsApp"}{note.next_action === "email" && "📧 Email"}{note.next_action === "llamada" && "📞 Llamada"}{note.next_action === "descuento" && "🎁 Descuento"}</Badge>{note.next_action_date && <span className="text-xs text-muted-foreground">📅 {new Date(note.next_action_date).toLocaleDateString("es-MX")}</span>}</div><span className="text-xs text-muted-foreground">{new Date(note.created_at).toLocaleDateString("es-MX")}</span></div><p className="text-sm">{note.note}</p><div className="flex items-center gap-2 mt-2"><Badge variant={note.status === "pendiente" ? "secondary" : "default"} className="text-xs">{note.status === "pendiente" ? "⏳ Pendiente" : "✅ Completada"}</Badge></div></div>))}</div>
                 </TabsContent>
               </Tabs>
-
-              <DialogFooter>
-                <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
-              </DialogFooter>
+              <DialogFooter><DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose></DialogFooter>
             </>
           )}
         </DialogContent>
@@ -871,63 +693,14 @@ const AdminUsuarios = () => {
       {/* Dialog: Crear usuario */}
       <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Crear nuevo usuario</DialogTitle>
-            <DialogDescription>
-              Completa los datos para crear un nuevo usuario.
-            </DialogDescription>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Crear nuevo usuario</DialogTitle><DialogDescription>Completa los datos para crear un nuevo usuario.</DialogDescription></DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Correo electrónico *</Label>
-              <Input
-                type="email"
-                placeholder="usuario@ejemplo.com"
-                value={newUser.email}
-                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Contraseña *</Label>
-              <Input
-                type="password"
-                placeholder="********"
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Nombre completo *</Label>
-              <Input
-                placeholder="Nombre Apellido"
-                value={newUser.full_name}
-                onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Rol</Label>
-              <Select
-                value={newUser.role}
-                onValueChange={(v) => setNewUser({ ...newUser, role: v as any })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="alumno">👤 Alumno</SelectItem>
-                  <SelectItem value="moderador">🛡️ Moderador</SelectItem>
-                  <SelectItem value="admin">👑 Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="space-y-2"><Label>Correo electrónico *</Label><Input type="email" placeholder="usuario@ejemplo.com" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Contraseña *</Label><Input type="password" placeholder="********" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} /><p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p></div>
+            <div className="space-y-2"><Label>Nombre completo *</Label><Input placeholder="Nombre Apellido" value={newUser.full_name} onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Rol</Label><Select value={newUser.role} onValueChange={(v) => setNewUser({ ...newUser, role: v as any })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="alumno">👤 Alumno</SelectItem><SelectItem value="moderador">🛡️ Moderador</SelectItem><SelectItem value="admin">👑 Admin</SelectItem></SelectContent></Select></div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateUserOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreateUser} disabled={isCreating}>
-              {isCreating ? "Creando..." : "Crear usuario"}
-            </Button>
-          </DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={() => setCreateUserOpen(false)}>Cancelar</Button><Button onClick={handleCreateUser} disabled={isCreating}>{isCreating ? "Creando..." : "Crear usuario"}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
