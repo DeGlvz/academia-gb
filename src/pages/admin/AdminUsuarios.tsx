@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, MoreHorizontal, Filter, CalendarDays, BookOpen, X, ShoppingCart, Shield, ShieldOff, CreditCard, User, Mail, Calendar, DollarSign, UtensilsCrossed, GraduationCap, TrendingUp, Info, ChevronDown, UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,8 +24,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useClasses } from "@/hooks/useClasses";
 import { foodPreferences, type FoodPreference } from "@/data/classes";
 import { supabase } from "@/integrations/supabase/client";
-import CreateUserModal from "@/components/admin/CreateUserModal";
-import CompleteProfileModal from "@/components/admin/CompleteProfileModal";
 
 interface UserWithDetails {
   id: string;
@@ -73,13 +71,19 @@ const AdminUsuarios = () => {
   const [crmNotes, setCrmNotes] = useState<any[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
-  // Modales
   const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [completeProfileOpen, setCompleteProfileOpen] = useState(false);
-  const [userToComplete, setUserToComplete] = useState<any>(null);
+  const [newUser, setNewUser] = useState({
+    email: "",
+    password: "",
+    full_name: "",
+    role: "alumno" as "admin" | "moderador" | "alumno",
+  });
+  const [isCreating, setIsCreating] = useState(false);
 
-  // 🔧 Función de carga optimizada con useCallback
-  const loadUsers = useCallback(async () => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  const loadUsers = async () => {
     setIsLoading(true);
     try {
       const { data: profiles, error: profilesError } = await supabase
@@ -139,9 +143,6 @@ const AdminUsuarios = () => {
           role = "moderador";
         }
         
-        // 🔧 Estado corregido: pendiente solo si no tiene full_name
-        const accountStatus = profile.full_name ? (profile.account_status || "activo") : "pendiente";
-        
         return {
           id: profile.user_id,
           email: profile.email || "",
@@ -153,7 +154,7 @@ const AdminUsuarios = () => {
           lesson_progress: lessonProgressPercent,
           blog_progress: 0,
           role: role,
-          account_status: accountStatus,
+          account_status: profile.account_status || "activo",
           food_preferences: profile.food_preferences || [],
           enrolled_classes: userEnrollments,
         };
@@ -166,32 +167,54 @@ const AdminUsuarios = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [dbClasses, toast]);
+  };
 
-  const loadCrmNotes = useCallback(async (userId: string) => {
-    setLoadingNotes(true);
-    try {
-      const { data, error } = await supabase
-        .from("crm_notes")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setCrmNotes(data || []);
-    } catch (error) {
-      console.error("Error loading CRM notes:", error);
-    } finally {
-      setLoadingNotes(false);
-    }
-  }, []);
-
-  // 🔧 useEffect con dependencia estable
   useEffect(() => {
     loadUsers();
-  }, [loadUsers]);
+  }, []);
 
-  const paidClasses = useMemo(() => dbClasses.filter((c) => !c.is_public && c.price > 0), [dbClasses]);
+  const handleCreateUser = async () => {
+    if (!newUser.email || !newUser.password || !newUser.full_name) {
+      toast({ title: "Error", description: "Todos los campos son requeridos", variant: "destructive" });
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const response = await fetch(`${supabaseUrl}/functions/v1/admin-create-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          email: newUser.email,
+          password: newUser.password,
+          full_name: newUser.full_name,
+          role: newUser.role,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al crear usuario");
+      }
+
+      toast({ title: "✅ Usuario creado", description: `${newUser.email} creado correctamente` });
+      
+      setCreateUserOpen(false);
+      setNewUser({ email: "", password: "", full_name: "", role: "alumno" });
+      loadUsers();
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const paidClasses = dbClasses.filter((c) => !c.is_public && c.price > 0);
 
   const hasActiveFilters = filterPref !== "Todas" || filterClass !== "Todas" || filterDateFrom || filterDateTo || filterRole !== "Todos" || filterStatus !== "Todos";
 
@@ -257,7 +280,7 @@ const AdminUsuarios = () => {
           });
       }
       
-      toast({ title: "Accesos actualizados", description: `Se actualizaron los accesos de ${accessUser.full_name || accessUser.email}` });
+      toast({ title: "Accesos actualizados", description: `Se actualizaron los accesos de ${accessUser.full_name}` });
       setAccessUser(null);
       loadUsers();
     } catch (error) {
@@ -311,7 +334,6 @@ const AdminUsuarios = () => {
   const openProfileModal = (user: UserWithDetails) => {
     setSelectedUser(user);
     setProfileModalOpen(true);
-    loadCrmNotes(user.id);
     setActiveProfileTab("resumen");
     setNewNote("");
     setNotePotential("bajo");
@@ -337,16 +359,10 @@ const AdminUsuarios = () => {
       setNotePotential("bajo");
       setNoteNextAction("whatsapp");
       setNoteNextDate("");
-      loadCrmNotes(selectedUser.id);
     } catch (error) {
       console.error("Error saving note:", error);
       toast({ title: "Error", description: "No se pudo guardar la nota", variant: "destructive" });
     }
-  };
-
-  const openCompleteProfileModal = (user: UserWithDetails) => {
-    setUserToComplete(user);
-    setCompleteProfileOpen(true);
   };
 
   const getRoleIcon = (role: string) => {
@@ -365,6 +381,16 @@ const AdminUsuarios = () => {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "activo": return "bg-green-100 text-green-700";
+      case "inactivo": return "bg-gray-100 text-gray-700";
+      case "suspendido": return "bg-red-100 text-red-700";
+      case "pendiente": return "bg-yellow-100 text-yellow-700";
+      default: return "bg-gray-100 text-gray-700";
+    }
+  };
+
   const getProgressColor = (progress: number) => {
     if (progress >= 70) return "text-green-600";
     if (progress >= 30) return "text-yellow-600";
@@ -378,18 +404,6 @@ const AdminUsuarios = () => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
-  };
-
-  const getStatusBadge = (status: string, fullName: string) => {
-    if (!fullName || status === "pendiente") {
-      return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">🟡 Pendiente</Badge>;
-    }
-    switch (status) {
-      case "activo": return <Badge className="bg-green-100 text-green-700">🟢 Activo</Badge>;
-      case "inactivo": return <Badge className="bg-gray-100 text-gray-700">⚪ Inactivo</Badge>;
-      case "suspendido": return <Badge className="bg-red-100 text-red-700">🔴 Suspendido</Badge>;
-      default: return <Badge className="bg-yellow-100 text-yellow-700">🟡 Pendiente</Badge>;
-    }
   };
 
   if (isLoading) {
@@ -516,7 +530,7 @@ const AdminUsuarios = () => {
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {u.full_name ? u.full_name.split(" ").map((n) => n[0]).join("") : "?"}
+                            {u.full_name.split(" ").map((n) => n[0]).join("")}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -526,7 +540,7 @@ const AdminUsuarios = () => {
                               className="font-medium p-0 h-auto text-foreground hover:text-primary"
                               onClick={() => openProfileModal(u)}
                             >
-                              {u.full_name || u.email.split("@")[0]}
+                              {u.full_name}
                             </Button>
                             <TooltipProvider>
                               <Tooltip>
@@ -567,7 +581,12 @@ const AdminUsuarios = () => {
                       </DropdownMenu>
                     </td>
                     <td className="p-3">
-                      {getStatusBadge(u.account_status, u.full_name)}
+                      <Badge className={getStatusColor(u.account_status)}>
+                        {u.account_status === "activo" && "🟢 Activo"}
+                        {u.account_status === "inactivo" && "⚪ Inactivo"}
+                        {u.account_status === "suspendido" && "🔴 Suspendido"}
+                        {u.account_status === "pendiente" && "🟡 Pendiente"}
+                      </Badge>
                     </td>
                     <td className="p-3 text-center font-medium">{u.enrolled_count}</td>
                     <td className="p-3 text-center">
@@ -587,11 +606,6 @@ const AdminUsuarios = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {(!u.full_name || u.account_status === "pendiente") && (
-                            <DropdownMenuItem onClick={() => openCompleteProfileModal(u)}>
-                              <User className="h-3.5 w-3.5 mr-2" /> Completar perfil
-                            </DropdownMenuItem>
-                          )}
                           <DropdownMenuItem onClick={() => openAccessDialog(u)}>
                             <BookOpen className="h-3.5 w-3.5 mr-2" /> Asignar accesos
                           </DropdownMenuItem>
@@ -609,13 +623,14 @@ const AdminUsuarios = () => {
         </CardContent>
       </Card>
 
-      {/* Diálogos */}
+      {/* Dialog: Asignar accesos */}
       <Dialog open={!!accessUser} onOpenChange={(open) => !open && setAccessUser(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Asignar accesos — {accessUser?.full_name || accessUser?.email}</DialogTitle>
+            <DialogTitle>Asignar accesos — {accessUser?.full_name}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">Marca las clases a las que este alumno tendrá acceso.</p>
+
           <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
             <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               <CreditCard className="h-3.5 w-3.5" /> Datos del pago (opcional)
@@ -643,6 +658,7 @@ const AdminUsuarios = () => {
               </Select>
             </div>
           </div>
+
           <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
             {paidClasses.map((c) => {
               const checked = accessClasses.includes(c.id);
@@ -664,6 +680,7 @@ const AdminUsuarios = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog: Perfil del alumno (CRM) */}
       <Dialog open={profileModalOpen} onOpenChange={setProfileModalOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           {selectedUser && (
@@ -672,15 +689,16 @@ const AdminUsuarios = () => {
                 <DialogTitle className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {selectedUser.full_name ? selectedUser.full_name.split(" ").map((n) => n[0]).join("") : "?"}
+                      {selectedUser.full_name.split(" ").map((n) => n[0]).join("")}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div>{selectedUser.full_name || selectedUser.email}</div>
+                    <div>{selectedUser.full_name}</div>
                     <DialogDescription>{selectedUser.email}</DialogDescription>
                   </div>
                 </DialogTitle>
               </DialogHeader>
+
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div className="text-center p-2 bg-muted/30 rounded-lg">
                   <p className="text-xs text-muted-foreground">Volumen</p>
@@ -703,12 +721,14 @@ const AdminUsuarios = () => {
                   <p className="text-sm font-bold">{selectedUser.created_at}</p>
                 </div>
               </div>
+
               <Tabs value={activeProfileTab} onValueChange={setActiveProfileTab}>
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="resumen">📊 Resumen</TabsTrigger>
                   <TabsTrigger value="clases">📚 Clases</TabsTrigger>
                   <TabsTrigger value="crm">📝 CRM</TabsTrigger>
                 </TabsList>
+
                 <TabsContent value="resumen" className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="border rounded-lg p-3">
@@ -733,10 +753,16 @@ const AdminUsuarios = () => {
                       <Badge className={selectedUser.role === "admin" ? "bg-purple-100 text-purple-700" : selectedUser.role === "moderador" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
                         {selectedUser.role === "admin" ? "👑 Admin" : selectedUser.role === "moderador" ? "🛡️ Moderador" : "👤 Alumno"}
                       </Badge>
-                      {getStatusBadge(selectedUser.account_status, selectedUser.full_name)}
+                      <Badge className={getStatusColor(selectedUser.account_status)}>
+                        {selectedUser.account_status === "activo" && "🟢 Activo"}
+                        {selectedUser.account_status === "inactivo" && "⚪ Inactivo"}
+                        {selectedUser.account_status === "suspendido" && "🔴 Suspendido"}
+                        {selectedUser.account_status === "pendiente" && "🟡 Pendiente"}
+                      </Badge>
                     </div>
                   </div>
                 </TabsContent>
+
                 <TabsContent value="clases">
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {selectedUser.enrolled_classes.length === 0 ? (
@@ -756,6 +782,7 @@ const AdminUsuarios = () => {
                     )}
                   </div>
                 </TabsContent>
+
                 <TabsContent value="crm" className="space-y-4">
                   <div className="border rounded-lg p-4 space-y-3">
                     <p className="text-sm font-semibold">Agregar nota de seguimiento</p>
@@ -780,6 +807,7 @@ const AdminUsuarios = () => {
                             <SelectItem value="email">📧 Enviar email</SelectItem>
                             <SelectItem value="llamada">📞 Llamada</SelectItem>
                             <SelectItem value="descuento">🎁 Ofrecer descuento</SelectItem>
+                            <SelectItem value="reunion">🤝 Reunión</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -791,6 +819,7 @@ const AdminUsuarios = () => {
                     <Textarea placeholder="Escribe la nota..." value={newNote} onChange={(e) => setNewNote(e.target.value)} rows={2} className="text-sm" />
                     <Button size="sm" onClick={saveCrmNote} disabled={!newNote.trim()}>Guardar nota</Button>
                   </div>
+
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">Historial de notas</p>
                     {loadingNotes ? (
@@ -812,6 +841,7 @@ const AdminUsuarios = () => {
                                 {note.next_action === "email" && "📧 Email"}
                                 {note.next_action === "llamada" && "📞 Llamada"}
                                 {note.next_action === "descuento" && "🎁 Descuento"}
+                                {note.next_action === "reunion" && "🤝 Reunión"}
                               </Badge>
                               {note.next_action_date && <span className="text-xs text-muted-foreground">📅 {new Date(note.next_action_date).toLocaleDateString("es-MX")}</span>}
                             </div>
@@ -829,6 +859,7 @@ const AdminUsuarios = () => {
                   </div>
                 </TabsContent>
               </Tabs>
+
               <DialogFooter>
                 <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
               </DialogFooter>
@@ -837,18 +868,68 @@ const AdminUsuarios = () => {
         </DialogContent>
       </Dialog>
 
-      <CreateUserModal
-        open={createUserOpen}
-        onOpenChange={setCreateUserOpen}
-        onUserCreated={loadUsers}
-      />
-
-      <CompleteProfileModal
-        open={completeProfileOpen}
-        onOpenChange={setCompleteProfileOpen}
-        user={userToComplete}
-        onComplete={loadUsers}
-      />
+      {/* Dialog: Crear usuario */}
+      <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Crear nuevo usuario</DialogTitle>
+            <DialogDescription>
+              Completa los datos para crear un nuevo usuario.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Correo electrónico *</Label>
+              <Input
+                type="email"
+                placeholder="usuario@ejemplo.com"
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Contraseña *</Label>
+              <Input
+                type="password"
+                placeholder="********"
+                value={newUser.password}
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Nombre completo *</Label>
+              <Input
+                placeholder="Nombre Apellido"
+                value={newUser.full_name}
+                onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Rol</Label>
+              <Select
+                value={newUser.role}
+                onValueChange={(v) => setNewUser({ ...newUser, role: v as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="alumno">👤 Alumno</SelectItem>
+                  <SelectItem value="moderador">🛡️ Moderador</SelectItem>
+                  <SelectItem value="admin">👑 Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateUserOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreateUser} disabled={isCreating}>
+              {isCreating ? "Creando..." : "Crear usuario"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
