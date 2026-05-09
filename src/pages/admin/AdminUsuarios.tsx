@@ -345,37 +345,72 @@ const AdminUsuarios = () => {
   };
 
   const handleCreateUser = async () => {
-    if (!newUser.email || !newUser.password || !newUser.full_name) {
-      toast({ title: "Error", description: "Todos los campos son requeridos", variant: "destructive" });
-      return;
+  if (!newUser.email || !newUser.password || !newUser.full_name) {
+    toast({ title: "Error", description: "Todos los campos son requeridos", variant: "destructive" });
+    return;
+  }
+
+  setIsCreating(true);
+  try {
+    // Usar la API de Supabase con la clave service_role
+    const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        email: newUser.email,
+        password: newUser.password,
+        email_confirm: true,
+        user_metadata: { full_name: newUser.full_name },
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Error response:", data);
+      throw new Error(data.message || data.msg || "Error al crear usuario");
     }
 
-    setIsCreating(true);
-    try {
-      // 1. Crear usuario en auth.users usando service_role
-      const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        body: JSON.stringify({
-          email: newUser.email,
-          password: newUser.password,
-          email_confirm: true,
-          user_metadata: { full_name: newUser.full_name },
-        }),
+    const userId = data.id;
+
+    // Crear perfil
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert({
+        user_id: userId,
+        full_name: newUser.full_name,
+        role: newUser.role,
+        account_status: "activo",
       });
 
-      const authResult = await response.json();
+    if (profileError) throw profileError;
 
-      if (!response.ok) {
-        throw new Error(authResult.msg || "Error al crear usuario");
-      }
+    // Si es admin, agregar a user_roles
+    if (newUser.role === "admin") {
+      await supabase
+        .from("user_roles")
+        .insert({ user_id: userId, role: "admin" });
+    }
 
-      const userId = authResult.id;
-
+    toast({ 
+      title: "✅ Usuario creado", 
+      description: `${newUser.email} creado correctamente` 
+    });
+    
+    setCreateUserOpen(false);
+    setNewUser({ email: "", password: "", full_name: "", role: "alumno" });
+    loadUsers();
+  } catch (error: any) {
+    console.error("Error creating user:", error);
+    toast({ title: "Error", description: error.message, variant: "destructive" });
+  } finally {
+    setIsCreating(false);
+  }
+};
       // 2. Crear perfil en profiles (SIN columna email)
       const { error: profileError } = await supabase
         .from("profiles")
