@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useClasses } from "@/hooks/useClasses";
 import { foodPreferences, type FoodPreference } from "@/data/classes";
 import { supabase } from "@/integrations/supabase/client";
+import CreateUserModal from "@/components/admin/CreateUserModal";
 
 interface UserWithDetails {
   id: string;
@@ -71,22 +72,15 @@ const AdminUsuarios = () => {
   const [crmNotes, setCrmNotes] = useState<any[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
-  // Estados para crear usuario
+  // Modal para crear usuario
   const [createUserOpen, setCreateUserOpen] = useState(false);
-  const [newUser, setNewUser] = useState({
-    email: "",
-    password: "",
-    full_name: "",
-    role: "alumno" as "admin" | "moderador" | "alumno",
-  });
-  const [isCreating, setIsCreating] = useState(false);
-
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("*");
 
       if (profilesError) throw profilesError;
 
@@ -342,70 +336,6 @@ const AdminUsuarios = () => {
     }
   };
 
-  const handleCreateUser = async () => {
-    if (!newUser.email || !newUser.password || !newUser.full_name) {
-      toast({ title: "Error", description: "Todos los campos son requeridos", variant: "destructive" });
-      return;
-    }
-
-    setIsCreating(true);
-    try {
-      const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        body: JSON.stringify({
-          email: newUser.email,
-          password: newUser.password,
-          email_confirm: true,
-          user_metadata: { full_name: newUser.full_name },
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || data.msg || "Error al crear usuario");
-      }
-
-      const userId = data.id;
-
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          user_id: userId,
-          full_name: newUser.full_name,
-          role: newUser.role,
-          account_status: "activo",
-        });
-
-      if (profileError) throw profileError;
-
-      if (newUser.role === "admin") {
-        await supabase
-          .from("user_roles")
-          .insert({ user_id: userId, role: "admin" });
-      }
-
-      toast({ 
-        title: "✅ Usuario creado", 
-        description: `${newUser.email} creado correctamente` 
-      });
-      
-      setCreateUserOpen(false);
-      setNewUser({ email: "", password: "", full_name: "", role: "alumno" });
-      loadUsers();
-    } catch (error: any) {
-      console.error("Error creating user:", error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "admin": return <Shield className="h-3 w-3" />;
@@ -562,7 +492,7 @@ const AdminUsuarios = () => {
                   <th className="p-3 font-medium text-muted-foreground text-center">Progreso</th>
                   <th className="p-3 font-medium text-muted-foreground text-right">Total</th>
                   <th className="p-3 w-10"></th>
-                </tr>
+                </table>
               </thead>
               <tbody>
                 {filtered.map((u) => (
@@ -921,67 +851,12 @@ const AdminUsuarios = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Crear nuevo usuario</DialogTitle>
-            <DialogDescription>
-              Completa los datos para crear un nuevo usuario.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Correo electrónico *</Label>
-              <Input
-                type="email"
-                placeholder="usuario@ejemplo.com"
-                value={newUser.email}
-                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Contraseña *</Label>
-              <Input
-                type="password"
-                placeholder="********"
-                value={newUser.password}
-                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Nombre completo *</Label>
-              <Input
-                placeholder="Nombre Apellido"
-                value={newUser.full_name}
-                onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Rol</Label>
-              <Select
-                value={newUser.role}
-                onValueChange={(v) => setNewUser({ ...newUser, role: v as any })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="alumno">👤 Alumno</SelectItem>
-                  <SelectItem value="moderador">🛡️ Moderador</SelectItem>
-                  <SelectItem value="admin">👑 Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateUserOpen(false)}>Cancelar</Button>
-            <Button onClick={handleCreateUser} disabled={isCreating}>
-              {isCreating ? "Creando..." : "Crear usuario"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Modal para crear usuario (separado) */}
+      <CreateUserModal
+        open={createUserOpen}
+        onOpenChange={setCreateUserOpen}
+        onUserCreated={loadUsers}
+      />
     </div>
   );
 };
