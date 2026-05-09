@@ -342,7 +342,6 @@ const AdminUsuarios = () => {
     }
   };
 
-  // Crear usuario manualmente
   const handleCreateUser = async () => {
     if (!newUser.email || !newUser.full_name) {
       toast({ title: "Error", description: "Email y nombre son requeridos", variant: "destructive" });
@@ -351,7 +350,6 @@ const AdminUsuarios = () => {
 
     setIsCreating(true);
     try {
-      // Verificar si ya existe
       const { data: existingUser, error: checkError } = await supabase
         .from("profiles")
         .select("user_id")
@@ -363,7 +361,6 @@ const AdminUsuarios = () => {
         return;
       }
 
-      // Crear perfil
       const tempId = crypto.randomUUID();
       const { error: profileError } = await supabase
         .from("profiles")
@@ -549,7 +546,7 @@ const AdminUsuarios = () => {
                   <th className="p-3 font-medium text-muted-foreground text-center">Progreso</th>
                   <th className="p-3 font-medium text-muted-foreground text-right">Total</th>
                   <th className="p-3 w-10"></th>
-                <tr>
+                </tr>
               </thead>
               <tbody>
                 {filtered.map((u) => (
@@ -584,7 +581,7 @@ const AdminUsuarios = () => {
                           <p className="text-xs text-muted-foreground">{u.email}</p>
                         </div>
                       </div>
-                    </tr>
+                    </td>
                     <td className="p-3 text-muted-foreground text-xs">{u.created_at}</td>
                     <td className="p-3">
                       <DropdownMenu>
@@ -759,7 +756,7 @@ const AdminUsuarios = () => {
                 </div>
               </div>
 
-              <Tabs value={activeProfileTab} onValueChange={setActiveProfileTab} className="mt-4">
+              <Tabs value={activeProfileTab} onValueChange={setActiveProfileTab}>
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="resumen">📊 Resumen</TabsTrigger>
                   <TabsTrigger value="clases">📚 Clases</TabsTrigger>
@@ -908,7 +905,6 @@ const AdminUsuarios = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Crear usuario */}
       <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
         <DialogContent>
           <DialogHeader>
