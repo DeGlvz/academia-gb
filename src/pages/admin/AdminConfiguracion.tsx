@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Database, Table, Copy, Download, CheckCircle, RefreshCw, Sprout } from "lucide-react";
+import { Database, Table, Copy, Download, CheckCircle, RefreshCw, Sprout, Tag } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
