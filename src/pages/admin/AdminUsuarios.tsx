@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Search, MoreHorizontal, Filter, CalendarDays, BookOpen, X, ShoppingCart, Shield, ShieldOff, CreditCard, User, Mail, Calendar, DollarSign, UtensilsCrossed, GraduationCap, TrendingUp, Info, ChevronDown, UserPlus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -73,14 +73,13 @@ const AdminUsuarios = () => {
   const [crmNotes, setCrmNotes] = useState<any[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
-  // Modal para crear usuario (paso 1)
+  // Modales
   const [createUserOpen, setCreateUserOpen] = useState(false);
-  
-  // Modal para completar perfil (paso 2)
   const [completeProfileOpen, setCompleteProfileOpen] = useState(false);
   const [userToComplete, setUserToComplete] = useState<any>(null);
 
-  const loadUsers = async () => {
+  // 🔧 Función de carga optimizada con useCallback
+  const loadUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       const { data: profiles, error: profilesError } = await supabase
@@ -140,6 +139,9 @@ const AdminUsuarios = () => {
           role = "moderador";
         }
         
+        // 🔧 Estado corregido: pendiente solo si no tiene full_name
+        const accountStatus = profile.full_name ? (profile.account_status || "activo") : "pendiente";
+        
         return {
           id: profile.user_id,
           email: profile.email || "",
@@ -151,7 +153,7 @@ const AdminUsuarios = () => {
           lesson_progress: lessonProgressPercent,
           blog_progress: 0,
           role: role,
-          account_status: profile.account_status || (profile.full_name ? "activo" : "pendiente"),
+          account_status: accountStatus,
           food_preferences: profile.food_preferences || [],
           enrolled_classes: userEnrollments,
         };
@@ -164,9 +166,9 @@ const AdminUsuarios = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dbClasses, toast]);
 
-  const loadCrmNotes = async (userId: string) => {
+  const loadCrmNotes = useCallback(async (userId: string) => {
     setLoadingNotes(true);
     try {
       const { data, error } = await supabase
@@ -182,13 +184,14 @@ const AdminUsuarios = () => {
     } finally {
       setLoadingNotes(false);
     }
-  };
-
-  useEffect(() => {
-    loadUsers();
   }, []);
 
-  const paidClasses = dbClasses.filter((c) => !c.is_public && c.price > 0);
+  // 🔧 useEffect con dependencia estable
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  const paidClasses = useMemo(() => dbClasses.filter((c) => !c.is_public && c.price > 0), [dbClasses]);
 
   const hasActiveFilters = filterPref !== "Todas" || filterClass !== "Todas" || filterDateFrom || filterDateTo || filterRole !== "Todos" || filterStatus !== "Todos";
 
@@ -254,7 +257,7 @@ const AdminUsuarios = () => {
           });
       }
       
-      toast({ title: "Accesos actualizados", description: `Se actualizaron los accesos de ${accessUser.full_name}` });
+      toast({ title: "Accesos actualizados", description: `Se actualizaron los accesos de ${accessUser.full_name || accessUser.email}` });
       setAccessUser(null);
       loadUsers();
     } catch (error) {
@@ -362,16 +365,6 @@ const AdminUsuarios = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "activo": return "bg-green-100 text-green-700";
-      case "inactivo": return "bg-gray-100 text-gray-700";
-      case "suspendido": return "bg-red-100 text-red-700";
-      case "pendiente": return "bg-yellow-100 text-yellow-700";
-      default: return "bg-gray-100 text-gray-700";
-    }
-  };
-
   const getProgressColor = (progress: number) => {
     if (progress >= 70) return "text-green-600";
     if (progress >= 30) return "text-yellow-600";
@@ -388,7 +381,7 @@ const AdminUsuarios = () => {
   };
 
   const getStatusBadge = (status: string, fullName: string) => {
-    if (status === "pendiente" && !fullName) {
+    if (!fullName || status === "pendiente") {
       return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">🟡 Pendiente</Badge>;
     }
     switch (status) {
@@ -594,8 +587,7 @@ const AdminUsuarios = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {/* Si el usuario está pendiente, mostrar "Completar perfil" */}
-                          {(u.account_status === "pendiente" && !u.full_name) && (
+                          {(!u.full_name || u.account_status === "pendiente") && (
                             <DropdownMenuItem onClick={() => openCompleteProfileModal(u)}>
                               <User className="h-3.5 w-3.5 mr-2" /> Completar perfil
                             </DropdownMenuItem>
@@ -617,13 +609,13 @@ const AdminUsuarios = () => {
         </CardContent>
       </Card>
 
+      {/* Diálogos */}
       <Dialog open={!!accessUser} onOpenChange={(open) => !open && setAccessUser(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Asignar accesos — {accessUser?.full_name || accessUser?.email}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">Marca las clases a las que este alumno tendrá acceso.</p>
-
           <div className="rounded-lg border p-3 space-y-3 bg-muted/20">
             <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               <CreditCard className="h-3.5 w-3.5" /> Datos del pago (opcional)
@@ -651,7 +643,6 @@ const AdminUsuarios = () => {
               </Select>
             </div>
           </div>
-
           <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
             {paidClasses.map((c) => {
               const checked = accessClasses.includes(c.id);
@@ -690,7 +681,6 @@ const AdminUsuarios = () => {
                   </div>
                 </DialogTitle>
               </DialogHeader>
-
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div className="text-center p-2 bg-muted/30 rounded-lg">
                   <p className="text-xs text-muted-foreground">Volumen</p>
@@ -713,14 +703,12 @@ const AdminUsuarios = () => {
                   <p className="text-sm font-bold">{selectedUser.created_at}</p>
                 </div>
               </div>
-
               <Tabs value={activeProfileTab} onValueChange={setActiveProfileTab}>
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="resumen">📊 Resumen</TabsTrigger>
                   <TabsTrigger value="clases">📚 Clases</TabsTrigger>
                   <TabsTrigger value="crm">📝 CRM</TabsTrigger>
                 </TabsList>
-
                 <TabsContent value="resumen" className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="border rounded-lg p-3">
@@ -749,7 +737,6 @@ const AdminUsuarios = () => {
                     </div>
                   </div>
                 </TabsContent>
-
                 <TabsContent value="clases">
                   <div className="space-y-2 max-h-96 overflow-y-auto">
                     {selectedUser.enrolled_classes.length === 0 ? (
@@ -769,7 +756,6 @@ const AdminUsuarios = () => {
                     )}
                   </div>
                 </TabsContent>
-
                 <TabsContent value="crm" className="space-y-4">
                   <div className="border rounded-lg p-4 space-y-3">
                     <p className="text-sm font-semibold">Agregar nota de seguimiento</p>
@@ -805,7 +791,6 @@ const AdminUsuarios = () => {
                     <Textarea placeholder="Escribe la nota..." value={newNote} onChange={(e) => setNewNote(e.target.value)} rows={2} className="text-sm" />
                     <Button size="sm" onClick={saveCrmNote} disabled={!newNote.trim()}>Guardar nota</Button>
                   </div>
-
                   <div className="space-y-2">
                     <p className="text-sm font-semibold">Historial de notas</p>
                     {loadingNotes ? (
@@ -844,7 +829,6 @@ const AdminUsuarios = () => {
                   </div>
                 </TabsContent>
               </Tabs>
-
               <DialogFooter>
                 <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
               </DialogFooter>
@@ -853,14 +837,12 @@ const AdminUsuarios = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal para crear usuario (paso 1) */}
       <CreateUserModal
         open={createUserOpen}
         onOpenChange={setCreateUserOpen}
         onUserCreated={loadUsers}
       />
 
-      {/* Modal para completar perfil (paso 2) */}
       <CompleteProfileModal
         open={completeProfileOpen}
         onOpenChange={setCompleteProfileOpen}
