@@ -10,13 +10,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 interface CreateUserModalProps {
@@ -28,19 +21,20 @@ interface CreateUserModalProps {
 const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalProps) => {
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
-  const [newUser, setNewUser] = useState({
-    email: "",
-    password: "",
-    full_name: "",
-    role: "alumno" as "admin" | "moderador" | "alumno",
-  });
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   const handleCreateUser = async () => {
-    if (!newUser.email || !newUser.password || !newUser.full_name) {
-      toast({ title: "Error", description: "Todos los campos son requeridos", variant: "destructive" });
+    if (!email || !password) {
+      toast({ title: "Error", description: "Email y contraseña son requeridos", variant: "destructive" });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({ title: "Error", description: "La contraseña debe tener al menos 6 caracteres", variant: "destructive" });
       return;
     }
 
@@ -55,10 +49,8 @@ const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalP
             'Authorization': `Bearer ${anonKey}`,
           },
           body: JSON.stringify({
-            email: newUser.email,
-            password: newUser.password,
-            full_name: newUser.full_name,
-            role: newUser.role,
+            email,
+            password,
           }),
         }
       );
@@ -71,10 +63,11 @@ const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalP
 
       toast({ 
         title: "✅ Usuario creado", 
-        description: `${newUser.email} creado correctamente` 
+        description: `${email} creado correctamente. Ahora completa su perfil.` 
       });
       
-      setNewUser({ email: "", password: "", full_name: "", role: "alumno" });
+      setEmail("");
+      setPassword("");
       onUserCreated();
       onOpenChange(false);
     } catch (error: any) {
@@ -91,7 +84,7 @@ const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalP
         <DialogHeader>
           <DialogTitle>Crear nuevo usuario</DialogTitle>
           <DialogDescription>
-            Completa los datos para crear un nuevo usuario.
+            Crea el usuario con email y contraseña. Luego podrás completar su perfil.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -100,8 +93,8 @@ const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalP
             <Input
               type="email"
               placeholder="usuario@ejemplo.com"
-              value={newUser.email}
-              onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -109,34 +102,10 @@ const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalP
             <Input
               type="password"
               placeholder="********"
-              value={newUser.password}
-              onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">Mínimo 6 caracteres</p>
-          </div>
-          <div className="space-y-2">
-            <Label>Nombre completo *</Label>
-            <Input
-              placeholder="Nombre Apellido"
-              value={newUser.full_name}
-              onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Rol</Label>
-            <Select
-              value={newUser.role}
-              onValueChange={(v) => setNewUser({ ...newUser, role: v as any })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="alumno">👤 Alumno</SelectItem>
-                <SelectItem value="moderador">🛡️ Moderador</SelectItem>
-                <SelectItem value="admin">👑 Admin</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
         <DialogFooter>
