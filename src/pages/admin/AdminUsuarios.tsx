@@ -86,9 +86,7 @@ const AdminUsuarios = () => {
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("*");
+      
 
       if (profilesError) throw profilesError;
 
