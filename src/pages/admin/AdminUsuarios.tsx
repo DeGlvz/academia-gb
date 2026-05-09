@@ -25,6 +25,7 @@ import { useClasses } from "@/hooks/useClasses";
 import { foodPreferences, type FoodPreference } from "@/data/classes";
 import { supabase } from "@/integrations/supabase/client";
 import CreateUserModal from "@/components/admin/CreateUserModal";
+import CompleteProfileModal from "@/components/admin/CompleteProfileModal";
 
 interface UserWithDetails {
   id: string;
@@ -72,8 +73,12 @@ const AdminUsuarios = () => {
   const [crmNotes, setCrmNotes] = useState<any[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
-  // Modal para crear usuario
+  // Modal para crear usuario (paso 1)
   const [createUserOpen, setCreateUserOpen] = useState(false);
+  
+  // Modal para completar perfil (paso 2)
+  const [completeProfileOpen, setCompleteProfileOpen] = useState(false);
+  const [userToComplete, setUserToComplete] = useState<any>(null);
 
   const loadUsers = async () => {
     setIsLoading(true);
@@ -138,7 +143,7 @@ const AdminUsuarios = () => {
         return {
           id: profile.user_id,
           email: profile.email || "",
-          full_name: profile.full_name || "Sin nombre",
+          full_name: profile.full_name || "",
           created_at: profile.created_at?.split("T")[0] || "—",
           last_sign_in_at: profile.updated_at?.split("T")[0] || "—",
           total_spent: totalSpent,
@@ -146,7 +151,7 @@ const AdminUsuarios = () => {
           lesson_progress: lessonProgressPercent,
           blog_progress: 0,
           role: role,
-          account_status: profile.account_status || "activo",
+          account_status: profile.account_status || (profile.full_name ? "activo" : "pendiente"),
           food_preferences: profile.food_preferences || [],
           enrolled_classes: userEnrollments,
         };
@@ -336,6 +341,11 @@ const AdminUsuarios = () => {
     }
   };
 
+  const openCompleteProfileModal = (user: UserWithDetails) => {
+    setUserToComplete(user);
+    setCompleteProfileOpen(true);
+  };
+
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "admin": return <Shield className="h-3 w-3" />;
@@ -375,6 +385,18 @@ const AdminUsuarios = () => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(value);
+  };
+
+  const getStatusBadge = (status: string, fullName: string) => {
+    if (status === "pendiente" && !fullName) {
+      return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">🟡 Pendiente</Badge>;
+    }
+    switch (status) {
+      case "activo": return <Badge className="bg-green-100 text-green-700">🟢 Activo</Badge>;
+      case "inactivo": return <Badge className="bg-gray-100 text-gray-700">⚪ Inactivo</Badge>;
+      case "suspendido": return <Badge className="bg-red-100 text-red-700">🔴 Suspendido</Badge>;
+      default: return <Badge className="bg-yellow-100 text-yellow-700">🟡 Pendiente</Badge>;
+    }
   };
 
   if (isLoading) {
@@ -479,7 +501,6 @@ const AdminUsuarios = () => {
       <p className="text-xs text-muted-foreground">{filtered.length} alumno{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}</p>
 
       <Card>
-              <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -502,7 +523,7 @@ const AdminUsuarios = () => {
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {u.full_name.split(" ").map((n) => n[0]).join("")}
+                            {u.full_name ? u.full_name.split(" ").map((n) => n[0]).join("") : "?"}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -512,7 +533,7 @@ const AdminUsuarios = () => {
                               className="font-medium p-0 h-auto text-foreground hover:text-primary"
                               onClick={() => openProfileModal(u)}
                             >
-                              {u.full_name}
+                              {u.full_name || u.email.split("@")[0]}
                             </Button>
                             <TooltipProvider>
                               <Tooltip>
@@ -553,23 +574,7 @@ const AdminUsuarios = () => {
                       </DropdownMenu>
                     </td>
                     <td className="p-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className={`h-6 text-xs ${getStatusColor(u.account_status)}`}>
-                            {u.account_status === "activo" && "🟢 Activo"}
-                            {u.account_status === "inactivo" && "⚪ Inactivo"}
-                            {u.account_status === "suspendido" && "🔴 Suspendido"}
-                            {u.account_status === "pendiente" && "🟡 Pendiente"}
-                            <ChevronDown className="h-3 w-3 ml-1" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "activo")}>🟢 Activo</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "inactivo")}>⚪ Inactivo</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "suspendido")}>🔴 Suspendido</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateUserStatus(u.id, "pendiente")}>🟡 Pendiente</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      {getStatusBadge(u.account_status, u.full_name)}
                     </td>
                     <td className="p-3 text-center font-medium">{u.enrolled_count}</td>
                     <td className="p-3 text-center">
@@ -589,6 +594,12 @@ const AdminUsuarios = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {/* Si el usuario está pendiente, mostrar "Completar perfil" */}
+                          {(u.account_status === "pendiente" && !u.full_name) && (
+                            <DropdownMenuItem onClick={() => openCompleteProfileModal(u)}>
+                              <User className="h-3.5 w-3.5 mr-2" /> Completar perfil
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => openAccessDialog(u)}>
                             <BookOpen className="h-3.5 w-3.5 mr-2" /> Asignar accesos
                           </DropdownMenuItem>
@@ -605,12 +616,11 @@ const AdminUsuarios = () => {
           </div>
         </CardContent>
       </Card>
-      </Card>
 
       <Dialog open={!!accessUser} onOpenChange={(open) => !open && setAccessUser(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Asignar accesos — {accessUser?.full_name}</DialogTitle>
+            <DialogTitle>Asignar accesos — {accessUser?.full_name || accessUser?.email}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">Marca las clases a las que este alumno tendrá acceso.</p>
 
@@ -671,11 +681,11 @@ const AdminUsuarios = () => {
                 <DialogTitle className="flex items-center gap-3">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {selectedUser.full_name.split(" ").map((n) => n[0]).join("")}
+                      {selectedUser.full_name ? selectedUser.full_name.split(" ").map((n) => n[0]).join("") : "?"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div>{selectedUser.full_name}</div>
+                    <div>{selectedUser.full_name || selectedUser.email}</div>
                     <DialogDescription>{selectedUser.email}</DialogDescription>
                   </div>
                 </DialogTitle>
@@ -735,17 +745,7 @@ const AdminUsuarios = () => {
                       <Badge className={selectedUser.role === "admin" ? "bg-purple-100 text-purple-700" : selectedUser.role === "moderador" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"}>
                         {selectedUser.role === "admin" ? "👑 Admin" : selectedUser.role === "moderador" ? "🛡️ Moderador" : "👤 Alumno"}
                       </Badge>
-                      <Badge className={
-                        selectedUser.account_status === "activo" ? "bg-green-100 text-green-700" :
-                        selectedUser.account_status === "inactivo" ? "bg-gray-100 text-gray-700" :
-                        selectedUser.account_status === "suspendido" ? "bg-red-100 text-red-700" :
-                        "bg-yellow-100 text-yellow-700"
-                      }>
-                        {selectedUser.account_status === "activo" && "🟢 Activo"}
-                        {selectedUser.account_status === "inactivo" && "⚪ Inactivo"}
-                        {selectedUser.account_status === "suspendido" && "🔴 Suspendido"}
-                        {selectedUser.account_status === "pendiente" && "🟡 Pendiente"}
-                      </Badge>
+                      {getStatusBadge(selectedUser.account_status, selectedUser.full_name)}
                     </div>
                   </div>
                 </TabsContent>
@@ -853,11 +853,19 @@ const AdminUsuarios = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Modal para crear usuario (separado) */}
+      {/* Modal para crear usuario (paso 1) */}
       <CreateUserModal
         open={createUserOpen}
         onOpenChange={setCreateUserOpen}
         onUserCreated={loadUsers}
+      />
+
+      {/* Modal para completar perfil (paso 2) */}
+      <CompleteProfileModal
+        open={completeProfileOpen}
+        onOpenChange={setCompleteProfileOpen}
+        user={userToComplete}
+        onComplete={loadUsers}
       />
     </div>
   );
