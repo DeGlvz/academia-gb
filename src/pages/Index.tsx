@@ -1,17 +1,31 @@
+import { useState } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import HeroSection from "@/components/landing/HeroSection";
+import PaidClassesSection from "@/components/landing/PaidClassesSection";
+import CompatibilitySection from "@/components/landing/CompatibilitySection";
+import TestimonialsSection from "@/components/landing/TestimonialsSection";
+import SobreGabyModal from "@/components/SobreGabyModal";
+import SearchModal from "@/components/SearchModal";
 
 const Index = () => {
-  console.log("🔍 Index montado - versión debug");
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [sobreGabyModalOpen, setSobreGabyModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1 container px-4 py-8">
-        <h1 className="text-3xl font-bold text-center">Debug Mode</h1>
-        <p className="text-center mt-4">Si ves esto, el problema está en otro componente.</p>
-      </main>
+      <Header 
+        onSearchClick={() => setSearchModalOpen(true)}
+        onSobreGabyClick={() => setSobreGabyModalOpen(true)}
+      />
+      <HeroSection />
+      <PaidClassesSection />
+      <CompatibilitySection />
+      <TestimonialsSection />
       <Footer />
+      
+      <SearchModal open={searchModalOpen} onOpenChange={setSearchModalOpen} />
+      <SobreGabyModal open={sobreGabyModalOpen} onOpenChange={setSobreGabyModalOpen} />
     </div>
   );
 };
