@@ -22,13 +22,15 @@ const Index = () => {
       />
       <HeroSection />
       
-      {/* Sección "De mi cocina a tu cocina" */}
+      {/* Sección "De mi cocina a tu cocina" - TODO EL TEXTO INTEGRADO */}
       <section className="py-12 bg-gradient-to-br from-mint-50/50 to-background">
         <div className="container px-4 max-w-4xl mx-auto text-center">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-mint-200/50 shadow-sm">
             <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4">
               ¡Bienvenida a mi rincón especial!
             </h2>
+            
+            {/* TODO EL TEXTO EN UN SOLO BLOQUE */}
             <div className="space-y-3 text-muted-foreground">
               <p>
                 En esta sección, <span className="font-medium text-foreground">"De mi cocina a tu cocina"</span>, 
