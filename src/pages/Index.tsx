@@ -22,7 +22,7 @@ const Index = () => {
       />
       <HeroSection />
       
-      {/* 🔧 SECCIÓN DE BIENVENIDA CON BOTONES FUNCIONALES */}
+      {/* Sección de bienvenida "De mi cocina a tu cocina" */}
       <section className="py-12 bg-gradient-to-br from-mint-50/50 to-background">
         <div className="container px-4 text-center">
           <div className="max-w-3xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-mint-200/50 shadow-sm">
@@ -48,7 +48,12 @@ const Index = () => {
                   📚 Ver Recetas Gratuitas
                 </Link>
               </Button>
-              <Button variant="outline" onClick={() => setSobreGabyModalOpen(true)} className="gap-2">
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setSobreGabyModalOpen(true)} 
+                className="gap-2"
+              >
                 👩‍🍳 Conoce a Gaby
               </Button>
             </div>
