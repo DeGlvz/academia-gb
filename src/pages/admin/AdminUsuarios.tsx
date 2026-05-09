@@ -650,7 +650,7 @@ const AdminUsuarios = () => {
                         </span>
                         <Progress value={u.lesson_progress} className="h-1.5 w-16" />
                       </div>
-                    </table>
+                    </td>
                     <td className="p-3 text-right font-medium">{formatCurrency(u.total_spent)}</td>
                     <td className="p-3">
                       <DropdownMenu>
