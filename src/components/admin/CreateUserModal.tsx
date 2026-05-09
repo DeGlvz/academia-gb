@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface CreateUserModalProps {
   open: boolean;
@@ -37,6 +36,7 @@ const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalP
   });
 
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   const handleCreateUser = async () => {
     if (!newUser.email || !newUser.password || !newUser.full_name) {
@@ -46,44 +46,27 @@ const CreateUserModal = ({ open, onOpenChange, onUserCreated }: CreateUserModalP
 
     setIsCreating(true);
     try {
-      const response = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        body: JSON.stringify({
-          email: newUser.email,
-          password: newUser.password,
-          email_confirm: true,
-          user_metadata: { full_name: newUser.full_name },
-        }),
-      });
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/admin-create-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${anonKey}`,
+          },
+          body: JSON.stringify({
+            email: newUser.email,
+            password: newUser.password,
+            full_name: newUser.full_name,
+            role: newUser.role,
+          }),
+        }
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || data.msg || "Error al crear usuario");
-      }
-
-      const userId = data.id;
-
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert({
-          user_id: userId,
-          full_name: newUser.full_name,
-          role: newUser.role,
-          account_status: "activo",
-        });
-
-      if (profileError) throw profileError;
-
-      if (newUser.role === "admin") {
-        await supabase
-          .from("user_roles")
-          .insert({ user_id: userId, role: "admin" });
+        throw new Error(data.error || "Error al crear usuario");
       }
 
       toast({ 
