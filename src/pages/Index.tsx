@@ -22,35 +22,38 @@ const Index = () => {
       />
       <HeroSection />
       
-      {/* Sección de bienvenida "De mi cocina a tu cocina" */}
+      {/* Sección "De mi cocina a tu cocina" */}
       <section className="py-12 bg-gradient-to-br from-mint-50/50 to-background">
-        <div className="container px-4 text-center">
-          <div className="max-w-3xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-mint-200/50 shadow-sm">
-            <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-3">
+        <div className="container px-4 max-w-4xl mx-auto text-center">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-mint-200/50 shadow-sm">
+            <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4">
               ¡Bienvenida a mi rincón especial!
             </h2>
-            <p className="text-muted-foreground">
-              En esta sección, "De mi cocina a tu cocina", quiero compartir contigo mis secretos más guardados, 
-              esos básicos que no pueden faltar y las recetas que preparo en casa para mi familia.
-            </p>
-            <p className="text-muted-foreground mt-2">
-              Aquí siempre encontrarás contenido totalmente gratuito: guías de inicio, trucos para cuidar tu Thermomix 
-              y recetas que te facilitarán la vida diaria.
-            </p>
-            <p className="text-foreground font-medium mt-4">
-              Mi meta es que te sientas segura, capaz y, sobre todo, muy emocionada de cocinar. 
-              ¡Espero que lo disfrutes tanto como yo!
-            </p>
+            <div className="space-y-3 text-muted-foreground">
+              <p>
+                En esta sección, <span className="font-medium text-foreground">"De mi cocina a tu cocina"</span>, 
+                quiero compartir contigo mis secretos más guardados, esos básicos que no pueden faltar 
+                y las recetas que preparo en casa para mi familia.
+              </p>
+              <p>
+                Aquí siempre encontrarás contenido totalmente gratuito: guías de inicio, trucos para cuidar tu Thermomix 
+                y recetas que te facilitarán la vida diaria.
+              </p>
+              <p className="text-foreground font-medium pt-2">
+                Mi meta es que te sientas segura, capaz y, sobre todo, muy emocionada de cocinar. 
+                ¡Espero que lo disfrutes tanto como yo!
+              </p>
+            </div>
             
-            <div className="flex flex-wrap gap-4 justify-center mt-6">
-              <Button asChild variant="default" className="gap-2">
+            <div className="flex flex-wrap gap-4 justify-center mt-8">
+              <Button asChild size="lg" className="gap-2">
                 <Link to="/recetas-gratis">
                   📚 Ver Recetas Gratuitas
                 </Link>
               </Button>
-              
               <Button 
                 variant="outline" 
+                size="lg" 
                 onClick={() => setSobreGabyModalOpen(true)} 
                 className="gap-2"
               >
@@ -58,8 +61,8 @@ const Index = () => {
               </Button>
             </div>
             
-            <div className="mt-4">
-              <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-3 py-1 rounded-full">
+            <div className="mt-6">
+              <span className="inline-flex items-center gap-1 text-sm text-green-700 bg-green-50 px-4 py-1.5 rounded-full">
                 🎁 100% Gratis
               </span>
             </div>
