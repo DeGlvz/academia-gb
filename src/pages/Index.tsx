@@ -22,7 +22,7 @@ const Index = () => {
       />
       <HeroSection />
       
-      {/* 🔧 SECCIÓN "DE MI COCINA A TU COCINA" - ÚNICA (con botones) */}
+      {/* Sección "De mi cocina a tu cocina" - ÚNICA (con botones) */}
       <section className="py-12 bg-gradient-to-br from-mint-50/50 to-background">
         <div className="container px-4 max-w-4xl mx-auto text-center">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-mint-200/50 shadow-sm">
