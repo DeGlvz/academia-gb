@@ -540,6 +540,7 @@ const AdminUsuarios = () => {
                   <th className="p-3 font-medium text-muted-foreground text-center">Progreso</th>
                   <th className="p-3 font-medium text-muted-foreground text-right">Total</th>
                   <th className="p-3 w-10"></th>
+                  </th>
                 </table>
               </thead>
               <tbody>
