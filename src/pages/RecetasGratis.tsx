@@ -1,86 +1,127 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import HeroSection from "@/components/landing/HeroSection";
-import PaidClassesSection from "@/components/landing/PaidClassesSection";
-import CompatibilitySection from "@/components/landing/CompatibilitySection";
-import TestimonialsSection from "@/components/landing/TestimonialsSection";
-import SobreGabyModal from "@/components/SobreGabyModal";
-import SearchModal from "@/components/SearchModal";
+import { useClasses } from "@/hooks/useClasses";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { BookOpen, Clock, Award, ArrowLeft, Loader2 } from "lucide-react";
 
-const Index = () => {
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [sobreGabyModalOpen, setSobreGabyModalOpen] = useState(false);
+// Slugs de blogs a excluir
+const BLOG_SLUGS = ["basicos-de-tu-thermomix"];
+
+const RecetasGratis = () => {
+  const { data: classes = [], isLoading } = useClasses();
+  const { user } = useAuth();
+
+  // Filtrar clases gratis (price === 0) y excluir blogs
+  const freeClasses = classes.filter(c => 
+    c.price === 0 && !BLOG_SLUGS.includes(c.slug)
+  );
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header 
-        onSearchClick={() => setSearchModalOpen(true)}
-        onSobreGabyClick={() => setSobreGabyModalOpen(true)}
-      />
-      <HeroSection />
-      
-      {/* Sección "De mi cocina a tu cocina" */}
-      <section className="py-12 bg-gradient-to-br from-mint-50/50 to-background">
-        <div className="container px-4 max-w-4xl mx-auto text-center">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-mint-200/50 shadow-sm">
-            <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4">
-              De mi cocina a tu cocina
-            </h2>
-            <div className="space-y-3 text-muted-foreground">
-              <p>
-                <span className="font-medium text-foreground">¡Bienvenida a mi rincón especial!</span>
-              </p>
-              <p>
-                En esta sección, "De mi cocina a tu cocina", quiero compartir contigo mis secretos más guardados, 
-                esos básicos que no pueden faltar y las recetas que preparo en casa para mi familia.
-              </p>
-              <p>
-                Aquí siempre encontrarás contenido totalmente gratuito: guías de inicio, trucos para cuidar tu Thermomix 
-                y recetas que te facilitarán la vida diaria.
-              </p>
-              <p className="text-foreground font-medium pt-2">
-                Mi meta es que te sientas segura, capaz y, sobre todo, muy emocionada de cocinar. 
-                ¡Espero que lo disfrutes tanto como yo!
-              </p>
-            </div>
-            
-            <div className="flex flex-wrap gap-4 justify-center mt-6">
-              <Button asChild variant="default" className="gap-2">
-                <Link to="/recetas-gratis">
-                  📚 Ver Recetas Gratuitas
-                </Link>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                onClick={() => setSobreGabyModalOpen(true)} 
-                className="gap-2"
-              >
-                👩‍🍳 Conoce a Gaby
-              </Button>
-            </div>
-            
-            <div className="mt-4">
-              <span className="inline-flex items-center gap-1 text-sm text-green-700 bg-green-50 px-4 py-1.5 rounded-full">
-                🎁 100% Gratis
-              </span>
-            </div>
+      <Header />
+      <main className="flex-1">
+        <div className="border-b bg-secondary/20">
+          <div className="container px-4 py-3">
+            <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+              Volver al inicio
+            </Link>
           </div>
         </div>
-      </section>
-      
-      <PaidClassesSection />
-      <CompatibilitySection />
-      <TestimonialsSection />
+
+        <div className="container px-4 py-8 md:py-12">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-3">
+              Recetas Gratuitas
+            </h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Explora todas nuestras recetas gratis. Regístrate para acceder al contenido completo.
+            </p>
+          </div>
+
+          {freeClasses.length === 0 ? (
+            <div className="text-center py-12">
+              <Award className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">Próximamente más recetas gratuitas</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {freeClasses.map((classItem) => (
+                <Card key={classItem.id} className="h-full hover:shadow-lg transition-all duration-300">
+                  {classItem.image_url && (
+                    <div className="aspect-video overflow-hidden rounded-t-lg">
+                      <img 
+                        src={classItem.image_url} 
+                        alt={classItem.title} 
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  )}
+                  <CardHeader>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                        🎁 Gratis
+                      </Badge>
+                      {classItem.duration && (
+                        <span className="text-xs flex items-center gap-1 text-muted-foreground">
+                          <Clock className="h-3 w-3" /> {classItem.duration}
+                        </span>
+                      )}
+                    </div>
+                    <CardTitle className="text-xl font-display line-clamp-2">
+                      {classItem.title}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2">
+                      {classItem.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-1">
+                      {classItem.compatible_models?.slice(0, 3).map((model: string) => (
+                        <span key={model} className="text-xs px-2 py-0.5 rounded-full bg-mint-100 text-mint-700">
+                          {model}
+                        </span>
+                      ))}
+                      {classItem.compatible_models?.length > 3 && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          +{classItem.compatible_models.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button asChild className="w-full gap-2">
+                      <Link to={`/clases/${classItem.slug}`}>
+                        <BookOpen className="h-4 w-4" />
+                        {user ? "Ver receta" : "Inicia sesión para acceder"}
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
       <Footer />
-      
-      <SearchModal open={searchModalOpen} onOpenChange={setSearchModalOpen} />
-      <SobreGabyModal open={sobreGabyModalOpen} onOpenChange={setSobreGabyModalOpen} />
     </div>
   );
 };
 
-export default Index;
+export default RecetasGratis;
