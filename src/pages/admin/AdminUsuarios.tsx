@@ -71,7 +71,6 @@ const AdminUsuarios = () => {
   const [crmNotes, setCrmNotes] = useState<any[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
 
-  // Estados para crear usuario
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [newUser, setNewUser] = useState({
     email: "",
@@ -189,7 +188,6 @@ const AdminUsuarios = () => {
     loadUsers();
   }, []);
 
-  // 🔧 FUNCIÓN CORREGIDA - Usa signUp en lugar de Edge Function
   const handleCreateUser = async () => {
     if (!newUser.email || !newUser.password || !newUser.full_name) {
       toast({ title: "Error", description: "Todos los campos son requeridos", variant: "destructive" });
@@ -198,7 +196,6 @@ const AdminUsuarios = () => {
 
     setIsCreating(true);
     try {
-      // 🔧 Usar el mismo método que usa el formulario de registro
       const { data, error } = await supabase.auth.signUp({
         email: newUser.email,
         password: newUser.password,
@@ -211,7 +208,6 @@ const AdminUsuarios = () => {
 
       if (error) throw error;
 
-      // Actualizar el rol en profiles si no es 'alumno'
       if (data.user && newUser.role !== "alumno") {
         await supabase
           .from("profiles")
@@ -439,7 +435,6 @@ const AdminUsuarios = () => {
 
   return (
     <div className="p-6 md:p-8 space-y-6">
-      {/* Cabecera con botón Crear usuario */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Control de Alumnos</h1>
@@ -451,7 +446,6 @@ const AdminUsuarios = () => {
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { value: users.length, label: "Total", icon: User },
@@ -470,7 +464,6 @@ const AdminUsuarios = () => {
         ))}
       </div>
 
-      {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -486,7 +479,6 @@ const AdminUsuarios = () => {
       {showFilters && (
         <Card>
           <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-            {/* Filtros roles, estados, etc. */}
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Preferencia</Label>
               <Select value={filterPref} onValueChange={(v) => setFilterPref(v as any)}>
@@ -534,7 +526,6 @@ const AdminUsuarios = () => {
 
       <p className="text-xs text-muted-foreground">{filtered.length} alumno{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}</p>
 
-      {/* Tabla de usuarios */}
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -625,7 +616,6 @@ const AdminUsuarios = () => {
         </CardContent>
       </Card>
 
-      {/* Dialog: Asignar accesos */}
       <Dialog open={!!accessUser} onOpenChange={(open) => !open && setAccessUser(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Asignar accesos — {accessUser?.full_name}</DialogTitle></DialogHeader>
@@ -653,7 +643,6 @@ const AdminUsuarios = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Perfil del alumno (CRM) */}
       <Dialog open={profileModalOpen} onOpenChange={setProfileModalOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           {selectedUser && (
@@ -692,7 +681,6 @@ const AdminUsuarios = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Crear usuario */}
       <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Crear nuevo usuario</DialogTitle><DialogDescription>Completa los datos para crear un nuevo usuario.</DialogDescription></DialogHeader>
