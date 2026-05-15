@@ -81,9 +81,6 @@ const AdminUsuarios = () => {
   });
   const [isCreating, setIsCreating] = useState(false);
 
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
   const loadUsers = async () => {
     setIsLoading(true);
     try {
@@ -192,6 +189,7 @@ const AdminUsuarios = () => {
     loadUsers();
   }, []);
 
+  // 🔧 FUNCIÓN CORREGIDA - Usa signUp en lugar de Edge Function
   const handleCreateUser = async () => {
     if (!newUser.email || !newUser.password || !newUser.full_name) {
       toast({ title: "Error", description: "Todos los campos son requeridos", variant: "destructive" });
@@ -200,27 +198,31 @@ const AdminUsuarios = () => {
 
     setIsCreating(true);
     try {
-      const response = await fetch(`${supabaseUrl}/functions/v1/admin-create-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${anonKey}`,
+      // 🔧 Usar el mismo método que usa el formulario de registro
+      const { data, error } = await supabase.auth.signUp({
+        email: newUser.email,
+        password: newUser.password,
+        options: {
+          data: {
+            full_name: newUser.full_name,
+          },
         },
-        body: JSON.stringify({
-          email: newUser.email,
-          password: newUser.password,
-          full_name: newUser.full_name,
-          role: newUser.role,
-        }),
       });
 
-      const data = await response.json();
+      if (error) throw error;
 
-      if (!response.ok) {
-        throw new Error(data.error || "Error al crear usuario");
+      // Actualizar el rol en profiles si no es 'alumno'
+      if (data.user && newUser.role !== "alumno") {
+        await supabase
+          .from("profiles")
+          .update({ role: newUser.role })
+          .eq("user_id", data.user.id);
       }
 
-      toast({ title: "✅ Usuario creado", description: `${newUser.email} creado correctamente` });
+      toast({ 
+        title: "✅ Usuario creado", 
+        description: `${newUser.email} creado correctamente` 
+      });
       
       setCreateUserOpen(false);
       setNewUser({ email: "", password: "", full_name: "", role: "alumno" });
@@ -547,7 +549,7 @@ const AdminUsuarios = () => {
                   <th className="p-3 font-medium text-muted-foreground text-center">Progreso</th>
                   <th className="p-3 font-medium text-muted-foreground text-right">Total</th>
                   <th className="p-3 w-10"></th>
-                </tr>
+                </table>
               </thead>
               <tbody>
                 {filtered.map((u) => (
