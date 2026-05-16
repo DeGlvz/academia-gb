@@ -102,4 +102,50 @@ const HeroSection = () => {
 
             <motion.div className="flex flex-wrap gap-3 pt-1 text-center" variants={fadeInUp} custom={2}>
               <Button size="lg" className="gap-2 shadow-lg font-body min-h-[48px]" asChild>
-               
+                <Link to={config.ctaPrimaryUrl}>
+                  <Sparkles className="h-4 w-4" />
+                  {config.ctaPrimary}
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="gap-2 font-body min-h-[48px]" asChild>
+                <Link to={config.ctaSecondaryUrl}>
+                  {config.ctaSecondary}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </motion.div>
+          </motion.div>
+
+          {/* Image */}
+          <motion.div
+            className="flex justify-center"
+            initial="hidden"
+            animate="visible"
+            variants={slideInRight}
+          >
+            <div className="relative">
+              <img
+                src={gabyImg}
+                alt="Gaby Bernal cocinando"
+                className="w-full max-w-md rounded-2xl shadow-2xl object-cover"
+              />
+              {/* Floating badge */}
+              <motion.div
+                className="absolute -bottom-4 -left-4 bg-card rounded-xl shadow-lg p-3 border flex items-center gap-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7, type: "spring" }}
+              >
+                <ChefHat className="h-5 w-5 text-primary" />
+                <span className="text-sm font-semibold text-foreground">100% Gratis</span>
+                <Heart className="h-4 w-4 text-primary fill-primary" />
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default HeroSection;
