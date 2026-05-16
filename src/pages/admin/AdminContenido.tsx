@@ -43,6 +43,16 @@ interface BlogPost {
   updated_at: string;
 }
 
+interface HeroConfig {
+  badge: string;
+  title: string;
+  subtitle: string;
+  ctaPrimary: string;
+  ctaPrimaryUrl: string;
+  ctaSecondary: string;
+  ctaSecondaryUrl: string;
+}
+
 const AdminContenido = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("landing");
@@ -66,15 +76,17 @@ const AdminContenido = () => {
   // Estado para el editor HTML
   const [htmlContent, setHtmlContent] = useState("");
 
-  // Hero section state
-  const [hero, setHero] = useState({
+  // Hero section state (ahora con URLs)
+  const [heroConfig, setHeroConfig] = useState<HeroConfig>({
     badge: "🍳 Academia Online",
     title: "Cocina con Gaby Bernal en tu cocina",
-    subtitle:
-      "Domina tu Thermomix con clases exclusivas, recetas paso a paso y herramientas profesionales diseñadas para ti.",
+    subtitle: "Domina tu Thermomix con clases exclusivas, recetas paso a paso y herramientas profesionales diseñadas para ti.",
     ctaPrimary: "Ver Clases",
+    ctaPrimaryUrl: "/clases",
     ctaSecondary: "Conoce más",
+    ctaSecondaryUrl: "/sobre-gaby",
   });
+  const [loadingConfig, setLoadingConfig] = useState(true);
 
   const [cta, setCta] = useState({
     title: "¿Lista para comenzar?",
@@ -88,6 +100,59 @@ const AdminContenido = () => {
     { name: "Ana García", text: "La Calculadora Panadero Pro es una joya. Mis panes nunca habían quedado tan bien.", rating: 5 },
     { name: "Laura Martínez", text: "Contenido de primera calidad. Cada clase vale completamente la pena.", rating: 5 },
   ]);
+
+  // Cargar configuración del Hero desde Supabase
+  const loadHeroConfig = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("site_config")
+        .select("*")
+        .eq("id", 1)
+        .single();
+      
+      if (error) throw error;
+      if (data) {
+        setHeroConfig({
+          badge: data.hero_badge || heroConfig.badge,
+          title: data.hero_title || heroConfig.title,
+          subtitle: data.hero_subtitle || heroConfig.subtitle,
+          ctaPrimary: data.hero_cta_primary || heroConfig.ctaPrimary,
+          ctaPrimaryUrl: data.hero_cta_primary_url || heroConfig.ctaPrimaryUrl,
+          ctaSecondary: data.hero_cta_secondary || heroConfig.ctaSecondary,
+          ctaSecondaryUrl: data.hero_cta_secondary_url || heroConfig.ctaSecondaryUrl,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading hero config:", error);
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
+
+  // Guardar configuración del Hero en Supabase
+  const saveHeroConfig = async () => {
+    try {
+      const { error } = await supabase
+        .from("site_config")
+        .update({
+          hero_badge: heroConfig.badge,
+          hero_title: heroConfig.title,
+          hero_subtitle: heroConfig.subtitle,
+          hero_cta_primary: heroConfig.ctaPrimary,
+          hero_cta_primary_url: heroConfig.ctaPrimaryUrl,
+          hero_cta_secondary: heroConfig.ctaSecondary,
+          hero_cta_secondary_url: heroConfig.ctaSecondaryUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", 1);
+      
+      if (error) throw error;
+      toast({ title: "Hero guardado", description: "Los cambios se aplicarán en la página principal." });
+    } catch (error) {
+      console.error("Error saving hero config:", error);
+      toast({ title: "Error", description: "No se pudo guardar la configuración", variant: "destructive" });
+    }
+  };
 
   // Función para insertar etiquetas HTML en el editor
   const insertHtmlTag = (tag: string) => {
@@ -149,6 +214,7 @@ const AdminContenido = () => {
 
   useEffect(() => {
     loadBlogPosts();
+    loadHeroConfig();
   }, []);
 
   const handleSaveLanding = (section: string) => {
@@ -279,6 +345,10 @@ const AdminContenido = () => {
     setIsDialogOpen(true);
   };
 
+  if (loadingConfig) {
+    return <div className="p-6 md:p-8 flex justify-center">Cargando configuración...</div>;
+  }
+
   return (
     <div className="p-6 md:p-8 space-y-8">
       <div>
@@ -307,27 +377,58 @@ const AdminContenido = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Badge</Label>
-                <Input value={hero.badge} onChange={(e) => setHero({ ...hero, badge: e.target.value })} />
+                <Input 
+                  value={heroConfig.badge} 
+                  onChange={(e) => setHeroConfig({ ...heroConfig, badge: e.target.value })} 
+                />
               </div>
               <div className="space-y-2">
                 <Label>Título principal</Label>
-                <Input value={hero.title} onChange={(e) => setHero({ ...hero, title: e.target.value })} />
+                <Input 
+                  value={heroConfig.title} 
+                  onChange={(e) => setHeroConfig({ ...heroConfig, title: e.target.value })} 
+                />
               </div>
               <div className="space-y-2">
                 <Label>Subtítulo</Label>
-                <Textarea value={hero.subtitle} onChange={(e) => setHero({ ...hero, subtitle: e.target.value })} />
+                <Textarea 
+                  value={heroConfig.subtitle} 
+                  onChange={(e) => setHeroConfig({ ...heroConfig, subtitle: e.target.value })} 
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Botón primario</Label>
-                  <Input value={hero.ctaPrimary} onChange={(e) => setHero({ ...hero, ctaPrimary: e.target.value })} />
+                  <Label>Botón primario (texto)</Label>
+                  <Input 
+                    value={heroConfig.ctaPrimary} 
+                    onChange={(e) => setHeroConfig({ ...heroConfig, ctaPrimary: e.target.value })} 
+                  />
                 </div>
                 <div className="space-y-2">
-                  <Label>Botón secundario</Label>
-                  <Input value={hero.ctaSecondary} onChange={(e) => setHero({ ...hero, ctaSecondary: e.target.value })} />
+                  <Label>URL botón primario</Label>
+                  <Input 
+                    value={heroConfig.ctaPrimaryUrl} 
+                    onChange={(e) => setHeroConfig({ ...heroConfig, ctaPrimaryUrl: e.target.value })} 
+                    placeholder="/clases"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Botón secundario (texto)</Label>
+                  <Input 
+                    value={heroConfig.ctaSecondary} 
+                    onChange={(e) => setHeroConfig({ ...heroConfig, ctaSecondary: e.target.value })} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>URL botón secundario</Label>
+                  <Input 
+                    value={heroConfig.ctaSecondaryUrl} 
+                    onChange={(e) => setHeroConfig({ ...heroConfig, ctaSecondaryUrl: e.target.value })} 
+                    placeholder="/sobre-gaby"
+                  />
                 </div>
               </div>
-              <Button onClick={() => handleSaveLanding("Hero")} className="gap-2">
+              <Button onClick={saveHeroConfig} className="gap-2">
                 <Save className="h-4 w-4" /> Guardar Hero
               </Button>
             </CardContent>
@@ -515,7 +616,6 @@ const AdminContenido = () => {
             <DialogTitle>{editingPost ? "Editar artículo" : "Nuevo artículo"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {/* Imagen destacada */}
             <div className="space-y-2">
               <Label>Imagen destacada</Label>
               <ImageUpload
@@ -563,7 +663,6 @@ const AdminContenido = () => {
             <div className="space-y-2">
               <Label>Contenido *</Label>
               
-              {/* Toolbar */}
               <div className="flex flex-wrap gap-1 p-2 border rounded-md bg-muted/30">
                 <Button type="button" variant="outline" size="sm" onClick={() => insertHtmlTag("bold")}>
                   <Bold className="h-4 w-4" />
