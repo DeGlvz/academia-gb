@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, Star, Plus, Edit, Trash2, Eye, EyeOff, FileText, Image as ImageIcon, Bold, Italic, Heading1, Heading2, List, ListOrdered } from "lucide-react";
+import { Save, Star, Plus, Edit, Trash2, Eye, EyeOff, FileText, Image as ImageIcon, Bold, Italic, Heading1, Heading2, List, ListOrdered, Cog } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ImageUpload } from "@/components/ui/image-upload";
+import AdminHerramientas from "./AdminHerramientas";
 
 // Tipo para posts del blog
 interface BlogPost {
@@ -76,7 +77,7 @@ const AdminContenido = () => {
   // Estado para el editor HTML
   const [htmlContent, setHtmlContent] = useState("");
 
-  // Hero section state (ahora con URLs)
+  // Hero section state
   const [heroConfig, setHeroConfig] = useState<HeroConfig>({
     badge: "🍳 Academia Online",
     title: "Cocina con Gaby Bernal en tu cocina",
@@ -90,8 +91,7 @@ const AdminContenido = () => {
 
   const [cta, setCta] = useState({
     title: "¿Lista para comenzar?",
-    subtitle:
-      "Únete a cientos de alumnas que ya cocinan como profesionales con su Thermomix.",
+    subtitle: "Únete a cientos de alumnas que ya cocinan como profesionales con su Thermomix.",
     buttonText: "Explorar Clases",
   });
 
@@ -357,7 +357,7 @@ const AdminContenido = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="landing" className="gap-2">
             <Star className="h-4 w-4" />
             Página principal
@@ -365,6 +365,10 @@ const AdminContenido = () => {
           <TabsTrigger value="blog" className="gap-2">
             <FileText className="h-4 w-4" />
             Blog
+          </TabsTrigger>
+          <TabsTrigger value="herramientas" className="gap-2">
+            <Cog className="h-4 w-4" />
+            Herramientas
           </TabsTrigger>
         </TabsList>
 
@@ -606,6 +610,11 @@ const AdminContenido = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Tab: Herramientas */}
+        <TabsContent value="herramientas" className="space-y-6">
+          <AdminHerramientas />
         </TabsContent>
       </Tabs>
 
