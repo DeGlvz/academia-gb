@@ -3,6 +3,7 @@ import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
+  ShoppingBag,
   Users,
   FileText,
   ChevronLeft,
@@ -20,6 +21,7 @@ import logo from "@/assets/logo-gaby-bernal.png";
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Clases", href: "/admin/clases", icon: BookOpen },
+  { label: "Productos", href: "/admin/productos", icon: ShoppingBag },
   { label: "Usuarios", href: "/admin/usuarios", icon: Users },
   { label: "Contenido", href: "/admin/contenido", icon: FileText },
   { label: "Configuración", href: "/admin/configuracion", icon: Settings },
