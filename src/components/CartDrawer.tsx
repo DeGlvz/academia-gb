@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Sheet,
   SheetContent,
@@ -15,12 +16,14 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ShoppingCart, Trash2, MessageCircle, X, CheckCircle, Loader2 } from "lucide-react";
+import { ShoppingCart, Trash2, MessageCircle, X, CheckCircle, Loader2, LogIn } from "lucide-react";
 import { recordPurchaseAttempt } from "@/lib/purchaseAttempts";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const CartDrawer = () => {
   const { items, removeItem, clearCart, total, count } = useCart();
+  const { user } = useAuth();  // 🔧 AGREGAR
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -31,6 +34,12 @@ const CartDrawer = () => {
   };
 
   const handleConfirmSend = async () => {
+    // 🔧 VERIFICAR LOGIN
+    if (!user) {
+      window.location.href = "/auth?redirect=/clases";
+      return;
+    }
+
     setSending(true);
     try {
       const orderNumber = await recordPurchaseAttempt(
@@ -43,6 +52,15 @@ const CartDrawer = () => {
     } finally {
       setSending(false);
     }
+  };
+
+  // 🔧 FUNCIÓN PARA ABRIR CONFIRMACIÓN (con validación)
+  const openConfirmDialog = () => {
+    if (!user) {
+      window.location.href = "/auth?redirect=/clases";
+      return;
+    }
+    setConfirmOpen(true);
   };
 
   return (
@@ -98,14 +116,28 @@ const CartDrawer = () => {
                   <span className="text-foreground">${total} MXN</span>
                 </div>
 
-                <Button
-                  className="w-full gap-2 font-body"
-                  size="lg"
-                  onClick={() => setConfirmOpen(true)}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Finalizar por WhatsApp
-                </Button>
+                {user ? (
+                  <Button
+                    className="w-full gap-2 font-body"
+                    size="lg"
+                    onClick={openConfirmDialog}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Finalizar por WhatsApp
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <Button className="w-full gap-2 font-body" size="lg" asChild>
+                      <Link to="/auth">
+                        <LogIn className="h-4 w-4" />
+                        Iniciar sesión para comprar
+                      </Link>
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground">
+                      Necesitas iniciar sesión para enviar tu pedido
+                    </p>
+                  </div>
+                )}
 
                 <Button
                   variant="outline"
