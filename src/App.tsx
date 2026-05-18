@@ -1,3 +1,4 @@
+import Tienda from "./pages/Tienda.tsx";
 import AdminProductos from "./pages/admin/AdminProductos.tsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/clases" element={<Clases />} />
               <Route path="/clases/:slug" element={<ClaseDetalle />} />
               <Route path="/herramientas/calculadora-panadero" element={<CalculadoraPanadero />} />
+              <Route path="/tienda" element={<Tienda />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/mi-perfil" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               
