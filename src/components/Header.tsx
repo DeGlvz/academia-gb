@@ -46,6 +46,11 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             Inicio
           </Link>
 
+          {/* Tienda */}
+          <Link to="/tienda" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">
+            🛒 Tienda
+          </Link>
+
           {/* Submenú Clases */}
           <NavigationMenu>
             <NavigationMenuList>
@@ -67,7 +72,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                     >
                       🎁 Clases gratis
                     </Link>
-                    {/* 🔧 TAREA #15: Blog visible para todos */}
                     <Link
                       to="/basicos"
                       className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
@@ -191,6 +195,10 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
         <nav className="md:hidden border-t bg-background px-4 py-4 space-y-3 animate-fade-in">
           <Link to="/" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
           
+          <Link to="/tienda" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>
+            🛒 Tienda
+          </Link>
+
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clases</p>
             <Link to="/clases" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
