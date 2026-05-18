@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Sheet,
@@ -20,21 +20,64 @@ import { ShoppingCart, Trash2, MessageCircle, X, CheckCircle, Loader2, LogIn } f
 import { recordPurchaseAttempt } from "@/lib/purchaseAttempts";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const CartDrawer = () => {
   const { items, removeItem, clearCart, total, count } = useCart();
-  const { user } = useAuth();  // 🔧 AGREGAR
+  const { user } = useAuth();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [userModel, setUserModel] = useState("");
+
+  // 🔧 Cargar datos del usuario desde profiles
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user) return;
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("full_name, thermomix_models")
+          .eq("user_id", user.id)
+          .single();
+
+        if (data) {
+          setUserName(data.full_name || "");
+          const models = data.thermomix_models;
+          if (models && models.length > 0) {
+            setUserModel(models.join(", "));
+          }
+        }
+      } catch (error) {
+        console.error("Error loading user profile:", error);
+      }
+    };
+    loadUserProfile();
+  }, [user]);
 
   const buildWhatsAppUrl = (orderNumber: string) => {
     const itemsList = items.map((i) => `• ${i.title} — $${i.price} MXN`).join("\n");
-    const message = `¡Hola Gaby! 👋 Vengo de tu App 'En tu Cocina'. 🧑‍🍳\n\nMe interesa adquirir lo siguiente:\n🛍️ Pedido: ${orderNumber}\n${itemsList}\n💰 Total estimado: $${total} MXN\n\nMi nombre es: [Tu nombre]\nMi modelo de Thermomix es: [Tu modelo]\n\n¿Me podrías compartir los datos para el pago? ¡Gracias!`;
+    
+    // 🔧 Usar datos reales del usuario
+    const finalName = userName || "[Tu nombre]";
+    const finalModel = userModel || "[Tu modelo]";
+    
+    const message = `¡Hola Gaby! 👋 Vengo de tu App 'En tu Cocina'. 🧑‍🍳
+
+Me interesa adquirir lo siguiente:
+🛍️ Pedido: ${orderNumber}
+${itemsList}
+💰 Total estimado: $${total} MXN
+
+Mi nombre es: ${finalName}
+Mi modelo de Thermomix es: ${finalModel}
+
+¿Me podrías compartir los datos para el pago? ¡Gracias!`;
+    
     return `https://wa.me/5215559663086?text=${encodeURIComponent(message)}`;
   };
 
   const handleConfirmSend = async () => {
-    // 🔧 VERIFICAR LOGIN
     if (!user) {
       window.location.href = "/auth?redirect=/clases";
       return;
@@ -54,7 +97,6 @@ const CartDrawer = () => {
     }
   };
 
-  // 🔧 FUNCIÓN PARA ABRIR CONFIRMACIÓN (con validación)
   const openConfirmDialog = () => {
     if (!user) {
       window.location.href = "/auth?redirect=/clases";
