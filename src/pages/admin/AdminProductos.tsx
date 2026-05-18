@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Eye, EyeOff, Save, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Save, X, PlusCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,72 +41,124 @@ interface Product {
   description: string;
   price: number;
   image_url: string;
-  category: string;
+  category_id: string;
+  category_name?: string;
+  category_icon?: string;
   is_active: boolean;
   sort_order: number;
   created_at: string;
 }
 
-const CATEGORIES = ["accesorio", "libro", "utensilio"];
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  sort_order: number;
+  is_active: boolean;
+}
 
 const AdminProductos = () => {
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   
-  const [formData, setFormData] = useState({
+  // Product form state
+  const [productDialogOpen, setProductDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productForm, setProductForm] = useState({
     name: "",
     description: "",
     price: "",
     image_url: "",
-    category: "accesorio",
+    category_id: "",
     is_active: true,
   });
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Category form state
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: "", icon: "🔧" });
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  
+  // Delete dialogs
+  const [deleteProductDialogOpen, setDeleteProductDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  // Cargar productos
+  // Cargar productos y categorías
   const loadProducts = async () => {
-    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from("products")
+        .select("*, product_categories!left(name, icon)")
+        .order("sort_order", { ascending: true });
+
+      if (error) throw error;
+      
+      const productsWithCategory = (data || []).map(p => ({
+        ...p,
+        category_name: p.product_categories?.name,
+        category_icon: p.product_categories?.icon,
+      }));
+      setProducts(productsWithCategory);
+    } catch (error) {
+      console.error("Error loading products:", error);
+      toast({ title: "Error", description: "No se pudieron cargar los productos", variant: "destructive" });
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("product_categories")
         .select("*")
         .order("sort_order", { ascending: true });
 
       if (error) throw error;
-      setProducts(data || []);
+      setCategories(data || []);
     } catch (error) {
-      console.error("Error loading products:", error);
-      toast({ title: "Error", description: "No se pudieron cargar los productos", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
+      console.error("Error loading categories:", error);
+      toast({ title: "Error", description: "No se pudieron cargar las categorías", variant: "destructive" });
     }
   };
 
+  const loadData = async () => {
+    setIsLoading(true);
+    await Promise.all([loadProducts(), loadCategories()]);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
-    loadProducts();
+    loadData();
   }, []);
 
-  // Guardar producto (crear o editar)
-  const handleSave = async () => {
-    if (!formData.name || !formData.price) {
-      toast({ title: "Error", description: "Nombre y precio son requeridos", variant: "destructive" });
+  // Generar slug desde nombre
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+  };
+
+  // ==================== PRODUCTOS ====================
+  const handleSaveProduct = async () => {
+    if (!productForm.name || !productForm.price || !productForm.category_id) {
+      toast({ title: "Error", description: "Nombre, precio y categoría son requeridos", variant: "destructive" });
       return;
     }
 
     setIsSaving(true);
     try {
       const productData = {
-        name: formData.name,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        image_url: formData.image_url,
-        category: formData.category,
-        is_active: formData.is_active,
+        name: productForm.name,
+        description: productForm.description,
+        price: parseFloat(productForm.price),
+        image_url: productForm.image_url,
+        category_id: productForm.category_id,
+        is_active: productForm.is_active,
         sort_order: editingProduct ? editingProduct.sort_order : products.length,
       };
 
@@ -117,18 +169,18 @@ const AdminProductos = () => {
           .eq("id", editingProduct.id);
 
         if (error) throw error;
-        toast({ title: "Producto actualizado", description: formData.name });
+        toast({ title: "Producto actualizado", description: productForm.name });
       } else {
         const { error } = await supabase
           .from("products")
           .insert([productData]);
 
         if (error) throw error;
-        toast({ title: "Producto creado", description: formData.name });
+        toast({ title: "Producto creado", description: productForm.name });
       }
 
-      setDialogOpen(false);
-      resetForm();
+      setProductDialogOpen(false);
+      resetProductForm();
       loadProducts();
     } catch (error: any) {
       console.error("Error saving product:", error);
@@ -138,29 +190,44 @@ const AdminProductos = () => {
     }
   };
 
-  // Eliminar producto
-  const handleDelete = async () => {
-    if (!productToDelete) return;
-    
-    try {
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", productToDelete.id);
-
-      if (error) throw error;
-      toast({ title: "Producto eliminado", description: productToDelete.name });
-      setDeleteDialogOpen(false);
-      setProductToDelete(null);
-      loadProducts();
-    } catch (error: any) {
-      console.error("Error deleting product:", error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+  const openProductDialog = (product?: Product) => {
+    if (product) {
+      setEditingProduct(product);
+      setProductForm({
+        name: product.name,
+        description: product.description || "",
+        price: product.price.toString(),
+        image_url: product.image_url || "",
+        category_id: product.category_id || "",
+        is_active: product.is_active,
+      });
+    } else {
+      setEditingProduct(null);
+      setProductForm({
+        name: "",
+        description: "",
+        price: "",
+        image_url: "",
+        category_id: categories[0]?.id || "",
+        is_active: true,
+      });
     }
+    setProductDialogOpen(true);
   };
 
-  // Cambiar estado activo/inactivo
-  const toggleActive = async (product: Product) => {
+  const resetProductForm = () => {
+    setEditingProduct(null);
+    setProductForm({
+      name: "",
+      description: "",
+      price: "",
+      image_url: "",
+      category_id: categories[0]?.id || "",
+      is_active: true,
+    });
+  };
+
+  const toggleProductActive = async (product: Product) => {
     try {
       const { error } = await supabase
         .from("products")
@@ -176,42 +243,60 @@ const AdminProductos = () => {
     }
   };
 
-  const openEditDialog = (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      description: product.description || "",
-      price: product.price.toString(),
-      image_url: product.image_url || "",
-      category: product.category || "accesorio",
-      is_active: product.is_active,
-    });
-    setDialogOpen(true);
+  const deleteProduct = async () => {
+    if (!productToDelete) return;
+    
+    try {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", productToDelete.id);
+
+      if (error) throw error;
+      toast({ title: "Producto eliminado", description: productToDelete.name });
+      setDeleteProductDialogOpen(false);
+      setProductToDelete(null);
+      loadProducts();
+    } catch (error: any) {
+      console.error("Error deleting product:", error);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
   };
 
-  const openNewDialog = () => {
-    setEditingProduct(null);
-    setFormData({
-      name: "",
-      description: "",
-      price: "",
-      image_url: "",
-      category: "accesorio",
-      is_active: true,
-    });
-    setDialogOpen(true);
-  };
+  // ==================== CATEGORÍAS (modal rápido) ====================
+  const handleCreateCategory = async () => {
+    if (!newCategory.name.trim()) {
+      toast({ title: "Error", description: "El nombre es requerido", variant: "destructive" });
+      return;
+    }
 
-  const resetForm = () => {
-    setEditingProduct(null);
-    setFormData({
-      name: "",
-      description: "",
-      price: "",
-      image_url: "",
-      category: "accesorio",
-      is_active: true,
-    });
+    setIsCreatingCategory(true);
+    try {
+      const slug = generateSlug(newCategory.name);
+      const { data, error } = await supabase
+        .from("product_categories")
+        .insert({
+          name: newCategory.name,
+          slug,
+          icon: newCategory.icon || "🔧",
+          sort_order: categories.length,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      toast({ title: "Categoría creada", description: newCategory.name });
+      await loadCategories();
+      setProductForm({ ...productForm, category_id: data.id });
+      setCategoryDialogOpen(false);
+      setNewCategory({ name: "", icon: "🔧" });
+    } catch (error: any) {
+      console.error("Error creating category:", error);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsCreatingCategory(false);
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -222,31 +307,23 @@ const AdminProductos = () => {
     }).format(value);
   };
 
-  const getCategoryLabel = (category: string) => {
-    switch (category) {
-      case "accesorio": return "🔧 Accesorio";
-      case "libro": return "📚 Libro";
-      case "utensilio": return "🍴 Utensilio";
-      default: return category;
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="p-6 md:p-8 flex justify-center">
-        <div className="animate-pulse text-muted-foreground">Cargando productos...</div>
+        <div className="animate-pulse text-muted-foreground">Cargando...</div>
       </div>
     );
   }
 
   return (
     <div className="p-6 md:p-8 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Productos</h1>
-          <p className="text-muted-foreground text-sm mt-1">Gestiona los productos de la tienda</p>
-        </div>
-        <Button onClick={openNewDialog} className="gap-2">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Productos</h1>
+        <p className="text-muted-foreground text-sm mt-1">Gestiona los productos de la tienda</p>
+      </div>
+
+      <div className="flex justify-end">
+        <Button onClick={() => openProductDialog()} className="gap-2">
           <Plus className="h-4 w-4" />
           Nuevo producto
         </Button>
@@ -267,11 +344,11 @@ const AdminProductos = () => {
               </thead>
               <tbody>
                 {products.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <tr>
+                    <td colSpan={5} className="text-center text-muted-foreground py-8">
                       No hay productos. Crea el primero.
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ) : (
                   products.map((product) => (
                     <tr key={product.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
@@ -293,7 +370,7 @@ const AdminProductos = () => {
                        </td>
                       <td className="p-3">
                         <Badge variant="outline" className="text-xs">
-                          {getCategoryLabel(product.category)}
+                          {product.category_icon} {product.category_name || "Sin categoría"}
                         </Badge>
                        </td>
                       <td className="p-3 text-right font-medium">{formatCurrency(product.price)}</td>
@@ -304,15 +381,15 @@ const AdminProductos = () => {
                        </td>
                       <td className="p-3">
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleActive(product)} title={product.is_active ? "Ocultar" : "Mostrar"}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleProductActive(product)} title={product.is_active ? "Ocultar" : "Mostrar"}>
                             {product.is_active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(product)} title="Editar">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openProductDialog(product)} title="Editar">
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
                             setProductToDelete(product);
-                            setDeleteDialogOpen(true);
+                            setDeleteProductDialogOpen(true);
                           }} title="Eliminar">
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -328,7 +405,7 @@ const AdminProductos = () => {
       </Card>
 
       {/* Dialog para crear/editar producto */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingProduct ? "Editar producto" : "Nuevo producto"}</DialogTitle>
@@ -337,32 +414,35 @@ const AdminProductos = () => {
             <div className="space-y-2">
               <Label>Nombre *</Label>
               <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={productForm.name}
+                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                 placeholder="Ej: Set de espátulas"
               />
             </div>
             <div className="space-y-2">
-              <Label>Categoría</Label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat === "accesorio" && "🔧 Accesorio"}
-                    {cat === "libro" && "📚 Libro"}
-                    {cat === "utensilio" && "🍴 Utensilio"}
-                  </option>
-                ))}
-              </select>
+              <Label>Categoría *</Label>
+              <div className="flex gap-2">
+                <select
+                  value={productForm.category_id}
+                  onChange={(e) => setProductForm({ ...productForm, category_id: e.target.value })}
+                  className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
+                    </option>
+                  ))}
+                </select>
+                <Button variant="outline" size="icon" onClick={() => setCategoryDialogOpen(true)} title="Nueva categoría">
+                  <PlusCircle className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Descripción</Label>
               <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                value={productForm.description}
+                onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
                 placeholder="Descripción del producto..."
                 rows={3}
               />
@@ -372,8 +452,8 @@ const AdminProductos = () => {
               <Input
                 type="number"
                 step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                value={productForm.price}
+                onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
                 placeholder="299.00"
               />
             </div>
@@ -382,32 +462,69 @@ const AdminProductos = () => {
               <ImageUpload
                 bucket="class-images"
                 path="productos"
-                onUpload={(url) => setFormData({ ...formData, image_url: url })}
-                existingUrl={formData.image_url}
+                onUpload={(url) => setProductForm({ ...productForm, image_url: url })}
+                existingUrl={productForm.image_url}
               />
             </div>
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
                 id="is_active"
-                checked={formData.is_active}
-                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                checked={productForm.is_active}
+                onChange={(e) => setProductForm({ ...productForm, is_active: e.target.checked })}
                 className="h-4 w-4 rounded border-input"
               />
               <Label htmlFor="is_active" className="cursor-pointer">Producto visible en la tienda</Label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={isSaving}>
+            <Button variant="outline" onClick={() => setProductDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveProduct} disabled={isSaving}>
               {isSaving ? "Guardando..." : editingProduct ? "Actualizar" : "Crear"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* AlertDialog para eliminar */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      {/* Dialog para crear categoría (rápido) */}
+      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nueva categoría</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Nombre *</Label>
+              <Input
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                placeholder="Ej: Accesorio, Libro, Utensilio"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Icono (emojis)</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newCategory.icon}
+                  onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
+                  placeholder="🔧"
+                  className="w-20 text-center"
+                />
+                <span className="text-sm text-muted-foreground self-center">Ej: 🔧, 📚, 🍴, 🎁, ⚡</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCategoryDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreateCategory} disabled={isCreatingCategory}>
+              {isCreatingCategory ? "Creando..." : "Crear categoría"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AlertDialog para eliminar producto */}
+      <AlertDialog open={deleteProductDialogOpen} onOpenChange={setDeleteProductDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar producto?</AlertDialogTitle>
@@ -417,7 +534,7 @@ const AdminProductos = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Eliminar</AlertDialogAction>
+            <AlertDialogAction onClick={deleteProduct}>Eliminar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
