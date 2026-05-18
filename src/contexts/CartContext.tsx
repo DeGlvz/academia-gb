@@ -1,25 +1,31 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 
 export interface CartItem {
-  classId: string;
+  id: string;
+  type: "class" | "product";
   title: string;
   price: number;
   image: string;
+  quantity?: number;
 }
 
 export interface CartAddable {
   id: string;
+  type: "class" | "product";
   title: string;
   price: number;
   image: string;
+  quantity?: number;
 }
 
 interface CartContextType {
   items: CartItem[];
   addItem: (c: CartAddable) => void;
-  removeItem: (classId: string) => void;
+  removeItem: (id: string, type: "class" | "product") => void;
+  updateQuantity: (id: string, type: "class" | "product", quantity: number) => void;
   clearCart: () => void;
-  isInCart: (classId: string) => boolean;
+  isInCart: (id: string, type: "class" | "product") => boolean;
+  getCartTotal: (type?: "class" | "product") => number;
   total: number;
   count: number;
 }
@@ -45,24 +51,63 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items]);
 
   const addItem = (c: CartAddable) => {
+    setItems((prev) => {
+      const existingIndex = prev.findIndex((i) => i.id === c.id && i.type === c.type);
+      if (existingIndex !== -1) {
+        // Si ya existe, incrementar cantidad
+        const newItems = [...prev];
+        const currentQty = newItems[existingIndex].quantity || 1;
+        newItems[existingIndex] = { ...newItems[existingIndex], quantity: currentQty + 1 };
+        return newItems;
+      }
+      // Si no existe, agregar con cantidad 1
+      return [...prev, { ...c, quantity: c.quantity || 1 }];
+    });
+  };
+
+  const removeItem = (id: string, type: "class" | "product") => {
+    setItems((prev) => prev.filter((i) => !(i.id === id && i.type === type)));
+  };
+
+  const updateQuantity = (id: string, type: "class" | "product", quantity: number) => {
+    if (quantity <= 0) {
+      removeItem(id, type);
+      return;
+    }
     setItems((prev) =>
-      prev.some((i) => i.classId === c.id)
-        ? prev
-        : [...prev, { classId: c.id, title: c.title, price: c.price, image: c.image }]
+      prev.map((i) =>
+        i.id === id && i.type === type ? { ...i, quantity: Math.max(1, quantity) } : i
+      )
     );
   };
 
-  const removeItem = (classId: string) =>
-    setItems((prev) => prev.filter((i) => i.classId !== classId));
-
   const clearCart = () => setItems([]);
 
-  const isInCart = (classId: string) => items.some((i) => i.classId === classId);
+  const isInCart = (id: string, type: "class" | "product") =>
+    items.some((i) => i.id === id && i.type === type);
 
-  const total = items.reduce((s, i) => s + i.price, 0);
+  const getCartTotal = (type?: "class" | "product") => {
+    const filtered = type ? items.filter((i) => i.type === type) : items;
+    return filtered.reduce((sum, i) => sum + i.price * (i.quantity || 1), 0);
+  };
+
+  const total = items.reduce((s, i) => s + i.price * (i.quantity || 1), 0);
+  const count = items.reduce((s, i) => s + (i.quantity || 1), 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, clearCart, isInCart, total, count: items.length }}>
+    <CartContext.Provider
+      value={{
+        items,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        isInCart,
+        getCartTotal,
+        total,
+        count,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
