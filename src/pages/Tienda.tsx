@@ -15,41 +15,74 @@ interface Product {
   description: string;
   price: number;
   image_url: string;
-  category: string;
+  category_id: string;
+  category_name?: string;
+  category_icon?: string;
   is_active: boolean;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
 }
 
 const Tienda = () => {
   const { toast } = useToast();
   const { items, addItem, removeItem, updateQuantity, getCartTotal } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("todas");
   const [isLoading, setIsLoading] = useState(true);
   const [showCart, setShowCart] = useState(false);
 
   // Filtrar solo productos de la tienda (type: 'product')
   const cartProducts = items.filter(item => item.type === 'product');
 
-  // Cargar productos
+  // Cargar productos y categorías
   useEffect(() => {
-    const loadProducts = async () => {
+    const loadData = async () => {
+      setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("products")
+        // Cargar categorías
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from("product_categories")
           .select("*")
           .eq("is_active", true)
           .order("sort_order", { ascending: true });
 
-        if (error) throw error;
-        setProducts(data || []);
+        if (categoriesError) throw categoriesError;
+        setCategories(categoriesData || []);
+
+        // Cargar productos
+        const { data: productsData, error: productsError } = await supabase
+          .from("products")
+          .select("*, product_categories!left(name, icon)")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true });
+
+        if (productsError) throw productsError;
+        
+        const productsWithCategory = (productsData || []).map(p => ({
+          ...p,
+          category_name: p.product_categories?.name,
+          category_icon: p.product_categories?.icon,
+        }));
+        setProducts(productsWithCategory);
       } catch (error) {
-        console.error("Error loading products:", error);
+        console.error("Error loading data:", error);
         toast({ title: "Error", description: "No se pudieron cargar los productos", variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
     };
-    loadProducts();
+    loadData();
   }, []);
+
+  // Filtrar productos por categoría
+  const filteredProducts = selectedCategory === "todas"
+    ? products
+    : products.filter(p => p.category_id === selectedCategory);
 
   const handleAddToCart = (product: Product) => {
     addItem({
@@ -78,7 +111,7 @@ const Tienda = () => {
     }
 
     const productList = cartProducts.map(item => 
-      `• ${item.title} x${item.quantity} = $${(item.price * item.quantity).toLocaleString()} MXN`
+      `• ${item.title} x${item.quantity} = $${(item.price * (item.quantity || 1)).toLocaleString()} MXN`
     ).join("%0A");
     
     const total = getCartTotal("product");
@@ -93,15 +126,6 @@ const Tienda = () => {
       currency: 'MXN',
       minimumFractionDigits: 2,
     }).format(value);
-  };
-
-  const getCategoryLabel = (category: string) => {
-    switch (category) {
-      case "accesorio": return "🔧 Accesorio";
-      case "libro": return "📚 Libro";
-      case "utensilio": return "🍴 Utensilio";
-      default: return category;
-    }
   };
 
   if (isLoading) {
@@ -129,6 +153,29 @@ const Tienda = () => {
         </div>
 
         <div className="container px-4 py-8">
+          {/* Filtros por categoría */}
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              <Button
+                variant={selectedCategory === "todas" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory("todas")}
+              >
+                Todos
+              </Button>
+              {categories.map((cat) => (
+                <Button
+                  key={cat.id}
+                  variant={selectedCategory === cat.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(cat.id)}
+                >
+                  {cat.icon} {cat.name}
+                </Button>
+              ))}
+            </div>
+          )}
+
           {/* Botón flotante del carrito */}
           {cartProducts.length > 0 && (
             <div className="fixed bottom-6 right-6 z-50">
@@ -191,7 +238,7 @@ const Tienda = () => {
 
           {/* Grid de productos */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <Card key={product.id} className="h-full hover:shadow-lg transition-all duration-300 flex flex-col">
                 <div className="aspect-square overflow-hidden rounded-t-lg bg-muted/30">
                   {product.image_url ? (
@@ -209,7 +256,7 @@ const Tienda = () => {
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <Badge variant="outline" className="text-xs">
-                      {getCategoryLabel(product.category)}
+                      {product.category_icon} {product.category_name}
                     </Badge>
                   </div>
                   <CardTitle className="text-lg font-display line-clamp-1">
@@ -238,9 +285,9 @@ const Tienda = () => {
             ))}
           </div>
 
-          {products.length === 0 && (
+          {filteredProducts.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Próximamente más productos</p>
+              <p className="text-muted-foreground">No hay productos en esta categoría</p>
             </div>
           )}
         </div>
