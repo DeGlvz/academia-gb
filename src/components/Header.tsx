@@ -42,16 +42,12 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
         </Link>
 
         <nav className="hidden md:flex items-center gap-4">
+          {/* 1. Inicio */}
           <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">
             Inicio
           </Link>
 
-          {/* Tienda */}
-          <Link to="/tienda" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">
-            🛒 Tienda
-          </Link>
-
-          {/* Submenú Clases */}
+          {/* 2. Clases (submenú) */}
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -105,7 +101,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* Submenú Herramientas */}
+          {/* 3. Herramientas (submenú) */}
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -126,6 +122,12 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             </NavigationMenuList>
           </NavigationMenu>
 
+          {/* 4. Tienda */}
+          <Link to="/tienda" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">
+            🛒 Tienda
+          </Link>
+
+          {/* 5. Sobre Gaby (modal) */}
           <button
             onClick={onSobreGabyClick}
             className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors"
@@ -195,10 +197,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
         <nav className="md:hidden border-t bg-background px-4 py-4 space-y-3 animate-fade-in">
           <Link to="/" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
           
-          <Link to="/tienda" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>
-            🛒 Tienda
-          </Link>
-
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clases</p>
             <Link to="/clases" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
@@ -227,9 +225,15 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
           <Link to="/herramientas/calculadora-panadero" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>
             🧮 Calculadora Panadera Pro
           </Link>
+          
+          <Link to="/tienda" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>
+            🛒 Tienda
+          </Link>
+          
           <button onClick={() => { onSobreGabyClick?.(); setIsMenuOpen(false); }} className="block text-base font-medium">
             Sobre Gaby
           </button>
+          
           {!user && (
             <Link to="/auth" className="block text-base font-medium text-primary" onClick={() => setIsMenuOpen(false)}>
               Iniciar sesión
