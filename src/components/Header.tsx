@@ -42,78 +42,80 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
           <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain max-w-[140px] sm:max-w-[180px]" />
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-4 lg:gap-6">
-          <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap">
-            Inicio
-          </Link>
+        {/* Desktop Navigation - alineado verticalmente */}
+        <div className="hidden md:flex items-center h-full">
+          <nav className="flex items-center gap-4 lg:gap-6">
+            <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap">
+              Inicio
+            </Link>
 
-          {/* Clases (submenú) */}
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-sm font-medium text-foreground/70 hover:text-primary bg-transparent">
-                  Clases
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
-                    <Link to="/clases" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                      📚 Catálogo de clases
-                    </Link>
-                    <Link to="/recetas-gratis" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                      🎁 Clases gratis
-                    </Link>
-                    <Link to="/basicos" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                      📖 Básicos de Thermomix
-                    </Link>
-                    {user && (
-                      <>
-                        <Link to="/#de-mi-cocina" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                          👩‍🍳 De mi cocina a tu cocina
-                        </Link>
-                        <DropdownMenuSeparator />
-                        <Link to="/mi-perfil" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                          📊 Mi progreso
-                        </Link>
-                      </>
-                    )}
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+            {/* Clases (submenú) */}
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-sm font-medium text-foreground/70 hover:text-primary bg-transparent h-auto py-2">
+                    Clases
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
+                      <Link to="/clases" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
+                        📚 Catálogo de clases
+                      </Link>
+                      <Link to="/recetas-gratis" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
+                        🎁 Clases gratis
+                      </Link>
+                      <Link to="/basicos" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
+                        📖 Básicos de Thermomix
+                      </Link>
+                      {user && (
+                        <>
+                          <Link to="/#de-mi-cocina" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
+                            👩‍🍳 De mi cocina a tu cocina
+                          </Link>
+                          <DropdownMenuSeparator />
+                          <Link to="/mi-perfil" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
+                            📊 Mi progreso
+                          </Link>
+                        </>
+                      )}
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
 
-          {/* Herramientas (submenú) */}
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-sm font-medium text-foreground/70 hover:text-primary bg-transparent">
-                  Herramientas
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
-                    <Link to="/herramientas/calculadora-panadero" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                      🧮 Calculadora Panadera Pro
-                    </Link>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+            {/* Herramientas (submenú) */}
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-sm font-medium text-foreground/70 hover:text-primary bg-transparent h-auto py-2">
+                    Herramientas
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
+                      <Link to="/herramientas/calculadora-panadero" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
+                        🧮 Calculadora Panadera Pro
+                      </Link>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
 
-          {/* Tienda */}
-          <Link to="/tienda" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap">
-            🛒 Tienda
-          </Link>
+            {/* Tienda */}
+            <Link to="/tienda" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap">
+              Tienda
+            </Link>
 
-          {/* Sobre Gaby (modal) */}
-          <button
-            onClick={onSobreGabyClick}
-            className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap"
-          >
-            Sobre Gaby
-          </button>
-        </nav>
+            {/* Sobre Gaby (modal) */}
+            <button
+              onClick={onSobreGabyClick}
+              className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap"
+            >
+              Sobre Gaby
+            </button>
+          </nav>
+        </div>
 
         {/* Right side */}
         <div className="flex items-center gap-1 sm:gap-2">
