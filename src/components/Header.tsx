@@ -13,6 +13,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
 interface HeaderProps {
   onSearchClick?: () => void;
@@ -35,85 +42,111 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
           <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain max-w-[140px] sm:max-w-[180px]" />
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-4 lg:gap-6">
-          <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap">
+        {/* Desktop Navigation - centrado y alineado */}
+        <nav className="hidden md:flex items-center justify-center gap-1 lg:gap-2">
+          <Link to="/" className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50">
             Inicio
           </Link>
 
           {/* Submenú Clases */}
-          <div className="relative group">
-            <button className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors flex items-center gap-1 whitespace-nowrap">
-              Clases
-              <svg className="w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            <div className="absolute left-0 top-full pt-2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 z-50">
-              <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
-                <Link to="/clases" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                  📚 Catálogo de clases
-                </Link>
-                <Link to="/recetas-gratis" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                  🎁 Clases gratis
-                </Link>
-                <Link to="/basicos" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                  📖 Básicos de Thermomix
-                </Link>
-                {user && (
-                  <>
-                    <Link to="/#de-mi-cocina" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                      👩‍🍳 De mi cocina a tu cocina
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary bg-transparent data-[state=open]:bg-muted/50">
+                  Clases
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
+                    <Link
+                      to="/clases"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      📚 Catálogo de clases
                     </Link>
-                    <DropdownMenuSeparator />
-                    <Link to="/mi-perfil" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                      📊 Mi progreso
+                    <Link
+                      to="/recetas-gratis"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      🎁 Clases gratis
                     </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+                    <Link
+                      to="/basicos"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      📖 Básicos de Thermomix
+                    </Link>
+                    {user && (
+                      <>
+                        <Link
+                          to="/#de-mi-cocina"
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                        >
+                          👩‍🍳 De mi cocina a tu cocina
+                        </Link>
+                      </>
+                    )}
+                    {user && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <Link
+                          to="/mi-perfil"
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                        >
+                          📊 Mi progreso
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
 
           {/* Submenú Herramientas */}
-          <div className="relative group">
-            <button className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors flex items-center gap-1 whitespace-nowrap">
-              Herramientas
-              <svg className="w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            <div className="absolute left-0 top-full pt-2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-200 z-50">
-              <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
-                <Link to="/herramientas/calculadora-panadero" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
-                  🧮 Calculadora Panadera Pro
-                </Link>
-              </div>
-            </div>
-          </div>
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary bg-transparent data-[state=open]:bg-muted/50">
+                  Herramientas
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
+                    <Link
+                      to="/herramientas/calculadora-panadero"
+                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                    >
+                      🧮 Calculadora Panadera Pro
+                    </Link>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
 
-          <Link to="/tienda" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap">
+          {/* Tienda */}
+          <Link to="/tienda" className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50">
             🛒 Tienda
           </Link>
 
+          {/* Sobre Gaby (modal) */}
           <button
             onClick={onSobreGabyClick}
-            className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap"
+            className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50"
           >
             Sobre Gaby
           </button>
         </nav>
 
-        {/* Right side */}
+        {/* Right side: Search + Cart + Auth */}
         <div className="flex items-center gap-1 sm:gap-2">
           <Button
             variant="ghost"
             size="icon"
             onClick={onSearchClick}
-            className="rounded-full h-9 w-9 sm:h-10 sm:w-10"
+            className="rounded-full h-9 w-9"
             aria-label="Buscar"
           >
-            <Search className="h-4 w-4 sm:h-5 sm:w-5" />
+            <Search className="h-5 w-5" />
           </Button>
 
           <CartDrawer />
@@ -121,8 +154,8 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 sm:h-10 sm:w-10">
-                  <Avatar className="h-8 w-8 sm:h-9 sm:w-9">
+                <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+                  <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                       {initials}
                     </AvatarFallback>
@@ -150,7 +183,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="ghost" size="sm" asChild className="gap-1.5 min-h-[36px] h-9 sm:h-10">
+            <Button variant="ghost" size="sm" asChild className="gap-1.5 h-9">
               <Link to="/auth"><LogIn className="h-4 w-4" /> <span className="hidden sm:inline">Iniciar sesión</span></Link>
             </Button>
           )}
@@ -167,8 +200,10 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
         <nav className="md:hidden border-t bg-background px-4 py-4 space-y-3 animate-fade-in">
           <Link to="/" className="block text-base font-medium py-2" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
           
+          <Link to="/tienda" className="block text-base font-medium py-2" onClick={() => setIsMenuOpen(false)}>🛒 Tienda</Link>
+
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clases</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">Clases</p>
             <Link to="/clases" className="block text-base font-medium pl-3 py-2" onClick={() => setIsMenuOpen(false)}>
               📚 Catálogo de clases
             </Link>
@@ -192,10 +227,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
 
           <Link to="/herramientas/calculadora-panadero" className="block text-base font-medium py-2" onClick={() => setIsMenuOpen(false)}>
             🧮 Calculadora Panadera Pro
-          </Link>
-          
-          <Link to="/tienda" className="block text-base font-medium py-2" onClick={() => setIsMenuOpen(false)}>
-            🛒 Tienda
           </Link>
           
           <button onClick={() => { onSobreGabyClick?.(); setIsMenuOpen(false); }} className="block text-base font-medium py-2 w-full text-left">
