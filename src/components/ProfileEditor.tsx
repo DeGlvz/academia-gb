@@ -152,25 +152,25 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
       {/* Información personal */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-display">Información personal</CardTitle>
+          <CardTitle className="text-base sm:text-lg font-display">Información personal</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nombre completo</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className="min-h-[44px]" />
+              <Label htmlFor="name" className="text-sm">Nombre completo</Label>
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" className="w-full min-h-[44px]" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Correo electrónico</Label>
-              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" className="min-h-[44px]" />
+              <Label htmlFor="email" className="text-sm">Correo electrónico</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" className="w-full min-h-[44px]" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="whatsapp">Teléfono / WhatsApp</Label>
-              <Input id="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+52 55 1234 5678" className="min-h-[44px]" />
+              <Label htmlFor="whatsapp" className="text-sm">Teléfono / WhatsApp</Label>
+              <Input id="whatsapp" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+52 55 1234 5678" className="w-full min-h-[44px]" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="facebook">Facebook (usuario)</Label>
-              <Input id="facebook" value={facebookUser} onChange={(e) => setFacebookUser(e.target.value)} placeholder="tu.usuario" className="min-h-[44px]" />
+              <Label htmlFor="facebook" className="text-sm">Facebook (usuario)</Label>
+              <Input id="facebook" value={facebookUser} onChange={(e) => setFacebookUser(e.target.value)} placeholder="tu.usuario" className="w-full min-h-[44px]" />
             </div>
           </div>
         </CardContent>
@@ -179,22 +179,22 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
       {/* Mis redes sociales */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-display">Mis redes sociales</CardTitle>
-          <p className="text-sm text-muted-foreground">Opcional - Comparte tus redes para conectar con otras alumnas</p>
+          <CardTitle className="text-base sm:text-lg font-display">Mis redes sociales</CardTitle>
+          <p className="text-xs sm:text-sm text-muted-foreground">Opcional - Comparte tus redes para conectar con otras alumnas</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="instagram" className="flex items-center gap-2"><Instagram className="h-4 w-4" /> Instagram</Label>
-              <Input id="instagram" value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@tu_usuario" className="min-h-[44px]" />
+              <Label htmlFor="instagram" className="flex items-center gap-2 text-sm"><Instagram className="h-4 w-4" /> Instagram</Label>
+              <Input id="instagram" value={instagram} onChange={(e) => setInstagram(e.target.value)} placeholder="@tu_usuario" className="w-full min-h-[44px]" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tiktok" className="flex items-center gap-2"><Tv className="h-4 w-4" /> TikTok</Label>
-              <Input id="tiktok" value={tiktok} onChange={(e) => setTikTok(e.target.value)} placeholder="@tu_usuario" className="min-h-[44px]" />
+              <Label htmlFor="tiktok" className="flex items-center gap-2 text-sm"><Tv className="h-4 w-4" /> TikTok</Label>
+              <Input id="tiktok" value={tiktok} onChange={(e) => setTikTok(e.target.value)} placeholder="@tu_usuario" className="w-full min-h-[44px]" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="website" className="flex items-center gap-2"><Globe className="h-4 w-4" /> Sitio web</Label>
-              <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://tusitio.com" className="min-h-[44px]" />
+              <Label htmlFor="website" className="flex items-center gap-2 text-sm"><Globe className="h-4 w-4" /> Sitio web</Label>
+              <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://tusitio.com" className="w-full min-h-[44px]" />
             </div>
           </div>
         </CardContent>
@@ -203,11 +203,11 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
       {/* Modelos Thermomix */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-display">Modelos Thermomix</CardTitle>
+          <CardTitle className="text-base sm:text-lg font-display">Modelos Thermomix</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>Modelos que tengo (puedes seleccionar varios)</Label>
+            <Label className="text-sm">Modelos que tengo (puedes seleccionar varios)</Label>
             <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-4">
               {THERMOMIX_MODELS.map((model) => (
                 <div key={model} className="flex items-center space-x-2">
@@ -223,7 +223,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
                     }}
                     disabled={isModelsDisabled}
                   />
-                  <Label htmlFor={`model-${model}`} className={`text-sm font-normal ${isModelsDisabled ? "text-muted-foreground" : ""}`}>
+                  <Label htmlFor={`model-${model}`} className={`text-sm font-normal cursor-pointer ${isModelsDisabled ? "text-muted-foreground" : ""}`}>
                     {model}
                   </Label>
                 </div>
@@ -238,7 +238,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
 
           <div className="flex items-center space-x-2">
             <Checkbox id="plan-to-buy" checked={planToBuy} onCheckedChange={(checked) => setPlanToBuy(!!checked)} />
-            <Label htmlFor="plan-to-buy" className="text-sm font-normal">Planeo comprar (referencia futura)</Label>
+            <Label htmlFor="plan-to-buy" className="text-sm font-normal cursor-pointer">Planeo comprar (referencia futura)</Label>
           </div>
 
           <div className="flex items-center space-x-2 pt-2 border-t">
@@ -250,7 +250,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
                 if (checked) setSelectedModels([]);
               }}
             />
-            <Label htmlFor="no-thermomix" className="text-sm font-normal">No tengo Thermomix (modo exploración)</Label>
+            <Label htmlFor="no-thermomix" className="text-sm font-normal cursor-pointer">No tengo Thermomix (modo exploración)</Label>
           </div>
         </CardContent>
       </Card>
@@ -258,8 +258,8 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
       {/* Preferencias de alimentación */}
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-lg font-display">Preferencias de alimentación</CardTitle>
-          <Button variant="outline" size="sm" onClick={handleSelectAllPreferences} className="gap-2 min-h-[44px]">
+          <CardTitle className="text-base sm:text-lg font-display">Preferencias de alimentación</CardTitle>
+          <Button variant="outline" size="sm" onClick={handleSelectAllPreferences} className="gap-2 text-sm min-h-[44px]">
             {selectedPreferences.length === FOOD_CATEGORIES.length ? "Deseleccionar todos" : "Seleccionar todos"}
           </Button>
         </CardHeader>
@@ -280,7 +280,7 @@ const ProfileEditor = ({ profile }: ProfileEditorProps) => {
                     }
                   }}
                 />
-                <Label htmlFor={`pref-${category}`} className="text-sm font-normal">
+                <Label htmlFor={`pref-${category}`} className="text-sm font-normal cursor-pointer">
                   {category}
                 </Label>
               </div>
