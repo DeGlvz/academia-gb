@@ -37,17 +37,18 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b">
       <div className="container flex items-center justify-between h-16 px-4">
+        {/* Logo */}
         <Link to="/" className="flex items-center shrink-0">
           <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain max-w-[140px] sm:max-w-[180px]" />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-4">
-          {/* 1. Inicio */}
-          <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-4 lg:gap-6">
+          <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap">
             Inicio
           </Link>
 
-          {/* 2. Clases (submenú) */}
+          {/* Clases (submenú) */}
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -56,41 +57,22 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
-                    <Link
-                      to="/clases"
-                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                    >
+                    <Link to="/clases" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
                       📚 Catálogo de clases
                     </Link>
-                    <Link
-                      to="/recetas-gratis"
-                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                    >
+                    <Link to="/recetas-gratis" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
                       🎁 Clases gratis
                     </Link>
-                    <Link
-                      to="/basicos"
-                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                    >
+                    <Link to="/basicos" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
                       📖 Básicos de Thermomix
                     </Link>
                     {user && (
                       <>
-                        <Link
-                          to="/#de-mi-cocina"
-                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                        >
+                        <Link to="/#de-mi-cocina" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
                           👩‍🍳 De mi cocina a tu cocina
                         </Link>
-                      </>
-                    )}
-                    {user && (
-                      <>
                         <DropdownMenuSeparator />
-                        <Link
-                          to="/mi-perfil"
-                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                        >
+                        <Link to="/mi-perfil" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
                           📊 Mi progreso
                         </Link>
                       </>
@@ -101,7 +83,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* 3. Herramientas (submenú) */}
+          {/* Herramientas (submenú) */}
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
@@ -110,10 +92,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
-                    <Link
-                      to="/herramientas/calculadora-panadero"
-                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                    >
+                    <Link to="/herramientas/calculadora-panadero" className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors">
                       🧮 Calculadora Panadera Pro
                     </Link>
                   </div>
@@ -122,29 +101,30 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* 4. Tienda */}
-          <Link to="/tienda" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors">
+          {/* Tienda */}
+          <Link to="/tienda" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap">
             🛒 Tienda
           </Link>
 
-          {/* 5. Sobre Gaby (modal) */}
+          {/* Sobre Gaby (modal) */}
           <button
             onClick={onSobreGabyClick}
-            className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors"
+            className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap"
           >
             Sobre Gaby
           </button>
         </nav>
 
-        <div className="flex items-center gap-2">
+        {/* Right side */}
+        <div className="flex items-center gap-1 sm:gap-2">
           <Button
             variant="ghost"
             size="icon"
             onClick={onSearchClick}
-            className="rounded-full"
+            className="rounded-full h-9 w-9 sm:h-10 sm:w-10"
             aria-label="Buscar"
           >
-            <Search className="h-5 w-5" />
+            <Search className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
 
           <CartDrawer />
@@ -152,7 +132,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 sm:h-10 sm:w-10">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                       {initials}
@@ -181,12 +161,13 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button variant="ghost" size="sm" asChild className="gap-1.5">
+            <Button variant="ghost" size="sm" asChild className="gap-1.5 h-9 sm:h-10">
               <Link to="/auth"><LogIn className="h-4 w-4" /> <span className="hidden sm:inline">Iniciar sesión</span></Link>
             </Button>
           )}
 
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          {/* Mobile menu button */}
+          <Button variant="ghost" size="icon" className="md:hidden h-9 w-9" onClick={() => setIsMenuOpen(!isMenuOpen)}>
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
@@ -213,27 +194,25 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                 <Link to="/#de-mi-cocina" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
                   👩‍🍳 De mi cocina a tu cocina
                 </Link>
+                <Link to="/mi-perfil" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
+                  📊 Mi progreso
+                </Link>
               </>
             )}
-            {user && (
-              <Link to="/mi-perfil" className="block text-base font-medium pl-3" onClick={() => setIsMenuOpen(false)}>
-                📊 Mi progreso
-              </Link>
-            )}
           </div>
+
+          <Link to="/tienda" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>
+            🛒 Tienda
+          </Link>
 
           <Link to="/herramientas/calculadora-panadero" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>
             🧮 Calculadora Panadera Pro
           </Link>
-          
-          <Link to="/tienda" className="block text-base font-medium" onClick={() => setIsMenuOpen(false)}>
-            🛒 Tienda
-          </Link>
-          
+
           <button onClick={() => { onSobreGabyClick?.(); setIsMenuOpen(false); }} className="block text-base font-medium">
             Sobre Gaby
           </button>
-          
+
           {!user && (
             <Link to="/auth" className="block text-base font-medium text-primary" onClick={() => setIsMenuOpen(false)}>
               Iniciar sesión
