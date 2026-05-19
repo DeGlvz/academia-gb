@@ -35,7 +35,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
           <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain max-w-[140px] sm:max-w-[180px]" />
         </Link>
 
-        {/* Desktop Navigation - Simple, sin NavigationMenu que causa problemas */}
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-4 lg:gap-6">
           <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap">
             Inicio
