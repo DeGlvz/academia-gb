@@ -36,185 +36,189 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
 
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b">
-      <div className="container flex items-center justify-between h-16 px-4">
-        {/* Logo */}
-        <Link to="/" className="flex items-center shrink-0">
-          <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain max-w-[140px] sm:max-w-[180px]" />
-        </Link>
-
-        {/* Desktop Navigation - CORREGIDO: todo en un solo flex */}
-        <div className="hidden md:flex items-center justify-center gap-1 lg:gap-2">
-          {/* Inicio - link normal */}
-          <Link 
-            to="/" 
-            className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50"
-          >
-            Inicio
+      <div className="container px-4 mx-auto">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo - izquierda */}
+          <Link to="/" className="flex items-center shrink-0">
+            <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain max-w-[140px] sm:max-w-[180px]" />
           </Link>
 
-          {/* Clases - Dropdown con NavigationMenu */}
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary bg-transparent data-[state=open]:bg-muted/50">
-                  Clases
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
-                    <Link
-                      to="/clases"
-                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      📚 Catálogo de clases
-                    </Link>
-                    <Link
-                      to="/recetas-gratis"
-                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      🎁 Clases gratis
-                    </Link>
-                    <Link
-                      to="/basicos"
-                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      📖 Básicos de Thermomix
-                    </Link>
-                    {user && (
-                      <>
+          {/* Desktop Navigation - CENTRADO con flex-1 y justify-center */}
+          <div className="hidden md:flex flex-1 items-center justify-center">
+            <div className="flex items-center gap-0 lg:gap-1">
+              {/* Inicio */}
+              <Link 
+                to="/" 
+                className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50 whitespace-nowrap"
+              >
+                Inicio
+              </Link>
+
+              {/* Clases - Dropdown */}
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary bg-transparent data-[state=open]:bg-muted/50">
+                      Clases
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
                         <Link
-                          to="/#de-mi-cocina"
+                          to="/clases"
                           className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
                           onClick={() => setIsMenuOpen(false)}
                         >
-                          👩‍🍳 De mi cocina a tu cocina
+                          📚 Catálogo de clases
                         </Link>
-                        <DropdownMenuSeparator />
                         <Link
-                          to="/mi-perfil"
+                          to="/recetas-gratis"
                           className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
                           onClick={() => setIsMenuOpen(false)}
                         >
-                          📊 Mi progreso
+                          🎁 Clases gratis
                         </Link>
-                      </>
-                    )}
+                        <Link
+                          to="/basicos"
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          📖 Básicos de Thermomix
+                        </Link>
+                        {user && (
+                          <>
+                            <Link
+                              to="/#de-mi-cocina"
+                              className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                              onClick={() => setIsMenuOpen(false)}
+                            >
+                              👩‍🍳 De mi cocina a tu cocina
+                            </Link>
+                            <DropdownMenuSeparator />
+                            <Link
+                              to="/mi-perfil"
+                              className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                              onClick={() => setIsMenuOpen(false)}
+                            >
+                              📊 Mi progreso
+                            </Link>
+                          </>
+                        )}
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+
+              {/* Herramientas - Dropdown */}
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary bg-transparent data-[state=open]:bg-muted/50">
+                      Herramientas
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
+                        <Link
+                          to="/herramientas/calculadora-panadero"
+                          className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          🧮 Calculadora Panadera Pro
+                        </Link>
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+
+              {/* Tienda */}
+              <Link 
+                to="/tienda" 
+                className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50 whitespace-nowrap"
+              >
+                Tienda
+              </Link>
+
+              {/* Sobre Gaby - botón modal */}
+              <button
+                onClick={onSobreGabyClick}
+                className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50 whitespace-nowrap"
+              >
+                Sobre Gaby
+              </button>
+            </div>
+          </div>
+
+          {/* Right side - Search + Cart + Auth */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onSearchClick}
+              className="rounded-full h-9 w-9"
+              aria-label="Buscar"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+
+            <CartDrawer />
+
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {user.user_metadata?.full_name || "Usuario"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-
-          {/* Herramientas - Dropdown con NavigationMenu */}
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary bg-transparent data-[state=open]:bg-muted/50">
-                  Herramientas
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="w-56 p-2 bg-popover rounded-md shadow-lg border">
-                    <Link
-                      to="/herramientas/calculadora-panadero"
-                      className="block px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      🧮 Calculadora Panadera Pro
-                    </Link>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-
-          {/* Tienda - link normal */}
-          <Link 
-            to="/tienda" 
-            className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50"
-          >
-            🛒 Tienda
-          </Link>
-
-          {/* Sobre Gaby - botón modal */}
-          <button
-            onClick={onSobreGabyClick}
-            className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50"
-          >
-            Sobre Gaby
-          </button>
-        </div>
-
-        {/* Right side: Search + Cart + Auth */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onSearchClick}
-            className="rounded-full h-9 w-9"
-            aria-label="Buscar"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
-
-          <CartDrawer />
-
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {user.user_metadata?.full_name || "Usuario"}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/mi-perfil">
-                    <User className="h-4 w-4 mr-2" /> Mi perfil
-                  </Link>
-                </DropdownMenuItem>
-                {isAdmin && (
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/admin">
-                      <Shield className="h-4 w-4 mr-2" /> Panel Admin
+                    <Link to="/mi-perfil">
+                      <User className="h-4 w-4 mr-2" /> Mi perfil
                     </Link>
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()} className="text-destructive">
-                  <LogOut className="h-4 w-4 mr-2" /> Cerrar sesión
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button variant="ghost" size="sm" asChild className="gap-1.5 h-9">
-              <Link to="/auth">
-                <LogIn className="h-4 w-4" /> 
-                <span className="hidden sm:inline">Iniciar sesión</span>
-              </Link>
-            </Button>
-          )}
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin">
+                        <Shield className="h-4 w-4 mr-2" /> Panel Admin
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => signOut()} className="text-destructive">
+                    <LogOut className="h-4 w-4 mr-2" /> Cerrar sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="ghost" size="sm" asChild className="gap-1.5 h-9">
+                <Link to="/auth">
+                  <LogIn className="h-4 w-4" /> 
+                  <span className="hidden sm:inline">Iniciar sesión</span>
+                </Link>
+              </Button>
+            )}
 
-          {/* Mobile menu button */}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="md:hidden h-9 w-9" 
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
+            {/* Mobile menu button */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="md:hidden h-9 w-9" 
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -256,7 +260,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
           </div>
 
           <Link to="/tienda" className="block text-base font-medium py-2" onClick={() => setIsMenuOpen(false)}>
-            🛒 Tienda
+            Tienda
           </Link>
           
           <button 
