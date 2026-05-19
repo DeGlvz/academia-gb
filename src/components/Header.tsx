@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, User, Shield, LogOut, LogIn, Search, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import logo from "@/assets/logo-gaby-bernal.png";
 import CartDrawer from "@/components/CartDrawer";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 interface HeaderProps {
   onSearchClick?: () => void;
@@ -22,160 +23,244 @@ interface HeaderProps {
 const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, isAdmin, signOut } = useAuth();
+  const location = useLocation();
+
+  // Cerrar menú al cambiar de ruta
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   const initials = user?.user_metadata?.full_name
-    ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
+    ? user.user_metadata.full_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)
     : user?.email?.[0]?.toUpperCase() ?? "?";
+
+  // Cerrar sesión
+  const handleSignOut = async () => {
+    await signOut();
+    setIsMenuOpen(false);
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b">
-      <div className="container px-4 mx-auto">
-        {/* Estructura de 3 columnas: Logo | Menú | Acciones */}
-        <div className="flex items-center h-16">
-          {/* COLUMNA 1: Logo - ancho fijo */}
-          <div className="w-[160px] sm:w-[200px] shrink-0">
-            <Link to="/" className="inline-block">
-              <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain" />
-            </Link>
-          </div>
+      <div className="container flex items-center justify-between h-16 px-4">
+        {/* Logo */}
+        <Link to="/" className="flex items-center shrink-0" onClick={() => setIsMenuOpen(false)}>
+          <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain max-w-[140px] sm:max-w-[180px]" />
+        </Link>
 
-          {/* COLUMNA 2: Menú Desktop - centro flexible */}
-          <div className="hidden md:flex flex-1 justify-center">
-            <div className="flex items-center gap-1 lg:gap-2">
-              <Link to="/" className="px-3 py-2 text-sm font-medium rounded-md hover:bg-muted/50 whitespace-nowrap">
-                Inicio
-              </Link>
+        {/* Botón de menú hamburguesa (visible siempre) */}
+        <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          
+          <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
+            <SheetHeader className="p-4 border-b">
+              <SheetTitle className="flex items-center gap-2">
+                <img src={logo} alt="Gaby Bernal" className="h-8 object-contain" />
+                <span className="text-sm font-normal text-muted-foreground">Menú</span>
+              </SheetTitle>
+            </SheetHeader>
+            
+            <div className="flex flex-col h-full">
+              <nav className="flex-1 py-4 px-2 space-y-1">
+                {/* Inicio */}
+                <Link
+                  to="/"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium hover:bg-muted transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  🏠 Inicio
+                </Link>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="px-3 py-2 text-sm font-medium h-auto gap-1 whitespace-nowrap">
-                    Clases <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-56">
-                  <DropdownMenuItem asChild><Link to="/clases">📚 Catálogo de clases</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link to="/recetas-gratis">🎁 Clases gratis</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link to="/basicos">📖 Básicos de Thermomix</Link></DropdownMenuItem>
-                  {user && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild><Link to="/#de-mi-cocina">👩‍🍳 De mi cocina a tu cocina</Link></DropdownMenuItem>
-                      <DropdownMenuItem asChild><Link to="/mi-perfil">📊 Mi progreso</Link></DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                {/* Catálogo de clases */}
+                <Link
+                  to="/clases"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium hover:bg-muted transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  📚 Catálogo de clases
+                </Link>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="px-3 py-2 text-sm font-medium h-auto gap-1 whitespace-nowrap">
-                    Herramientas <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-56">
-                  <DropdownMenuItem asChild>
-                    <Link to="/herramientas/calculadora-panadero">🧮 Calculadora Panadera Pro</Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                {/* Clases gratis */}
+                <Link
+                  to="/recetas-gratis"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium hover:bg-muted transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  🎁 Clases gratis
+                </Link>
 
-              <Link to="/tienda" className="px-3 py-2 text-sm font-medium rounded-md hover:bg-muted/50 whitespace-nowrap">
-                Tienda
-              </Link>
+                {/* Básicos de Thermomix (blog) */}
+                <Link
+                  to="/basicos"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium hover:bg-muted transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  📖 Básicos de Thermomix
+                </Link>
 
-              <button
-                onClick={onSobreGabyClick}
-                className="px-3 py-2 text-sm font-medium rounded-md hover:bg-muted/50 whitespace-nowrap"
-              >
-                Sobre Gaby
-              </button>
+                {/* Tienda */}
+                <Link
+                  to="/tienda"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium hover:bg-muted transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  🛒 Tienda
+                </Link>
+
+                {/* Calculadora */}
+                <Link
+                  to="/herramientas/calculadora-panadero"
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium hover:bg-muted transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  🧮 Calculadora Panadera Pro
+                </Link>
+
+                {/* Separador si está logueado */}
+                {user && <div className="h-px bg-border my-2" />}
+
+                {/* Mi progreso (solo logueado) */}
+                {user && (
+                  <Link
+                    to="/mi-perfil"
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium hover:bg-muted transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    📊 Mi progreso
+                  </Link>
+                )}
+
+                {/* De mi cocina a tu cocina (solo logueado) */}
+                {user && (
+                  <Link
+                    to="/#de-mi-cocina"
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium hover:bg-muted transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    👩‍🍳 De mi cocina a tu cocina
+                  </Link>
+                )}
+
+                {/* Separador */}
+                <div className="h-px bg-border my-2" />
+
+                {/* Sobre Gaby (modal) */}
+                <button
+                  onClick={() => {
+                    onSobreGabyClick?.();
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-base font-medium hover:bg-muted transition-colors text-left"
+                >
+                  👤 Sobre Gaby
+                </button>
+              </nav>
+
+              {/* Footer del menú móvil */}
+              <div className="p-4 border-t space-y-2">
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-3 px-3 py-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{user.user_metadata?.full_name || user.email}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      </div>
+                    </div>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Shield className="h-4 w-4" />
+                        Panel Admin
+                      </Link>
+                    )}
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Cerrar sesión
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/auth"
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <LogIn className="h-4 w-4" />
+                    Iniciar sesión
+                  </Link>
+                )}
+              </div>
             </div>
-          </div>
+          </SheetContent>
+        </Sheet>
 
-          {/* COLUMNA 3: Acciones - ancho fijo */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            <Button variant="ghost" size="icon" onClick={onSearchClick} className="rounded-full h-9 w-9">
-              <Search className="h-5 w-5" />
-            </Button>
+        {/* Acciones derecha: Búsqueda, Carrito, Avatar */}
+        <div className="flex items-center gap-2">
+          {/* Botón búsqueda */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onSearchClick}
+            className="rounded-full"
+            aria-label="Buscar"
+          >
+            <Search className="h-5 w-5" />
+          </Button>
 
-            <CartDrawer />
+          <CartDrawer />
 
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="rounded-full h-9 w-9 p-0">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium truncate">{user.user_metadata?.full_name || "Usuario"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link to="/mi-perfil"><User className="h-4 w-4 mr-2" /> Mi perfil</Link></DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem asChild><Link to="/admin"><Shield className="h-4 w-4 mr-2" /> Panel Admin</Link></DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()} className="text-destructive">
-                    <LogOut className="h-4 w-4 mr-2" /> Cerrar sesión
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium text-foreground truncate">{user.user_metadata?.full_name || user.email}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/mi-perfil"><User className="h-4 w-4 mr-2" /> Mi perfil</Link>
+                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin"><Shield className="h-4 w-4 mr-2" /> Panel Admin</Link>
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button variant="ghost" size="sm" asChild className="gap-1.5 h-9">
-                <Link to="/auth"><LogIn className="h-4 w-4" /> <span className="hidden sm:inline">Iniciar sesión</span></Link>
-              </Button>
-            )}
-
-            <Button variant="ghost" size="icon" className="md:hidden h-9 w-9" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                  <LogOut className="h-4 w-4 mr-2" /> Cerrar sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="ghost" size="sm" asChild className="gap-1.5">
+              <Link to="/auth"><LogIn className="h-4 w-4" /> <span className="hidden sm:inline">Iniciar sesión</span></Link>
             </Button>
-          </div>
+          )}
         </div>
       </div>
-
-      {/* Mobile Navigation (sin cambios) */}
-      {isMenuOpen && (
-        <nav className="md:hidden border-t bg-background px-4 py-4 space-y-3">
-          <Link to="/" className="block text-base py-2" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
-          
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground px-2">Clases</p>
-            <Link to="/clases" className="block text-base pl-3 py-2" onClick={() => setIsMenuOpen(false)}>📚 Catálogo de clases</Link>
-            <Link to="/recetas-gratis" className="block text-base pl-3 py-2" onClick={() => setIsMenuOpen(false)}>🎁 Clases gratis</Link>
-            <Link to="/basicos" className="block text-base pl-3 py-2" onClick={() => setIsMenuOpen(false)}>📖 Básicos de Thermomix</Link>
-            {user && (
-              <>
-                <Link to="/#de-mi-cocina" className="block text-base pl-3 py-2" onClick={() => setIsMenuOpen(false)}>👩‍🍳 De mi cocina a tu cocina</Link>
-                <Link to="/mi-perfil" className="block text-base pl-3 py-2" onClick={() => setIsMenuOpen(false)}>📊 Mi progreso</Link>
-              </>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground px-2">Herramientas</p>
-            <Link to="/herramientas/calculadora-panadero" className="block text-base pl-3 py-2" onClick={() => setIsMenuOpen(false)}>🧮 Calculadora Panadera Pro</Link>
-          </div>
-
-          <Link to="/tienda" className="block text-base py-2" onClick={() => setIsMenuOpen(false)}>Tienda</Link>
-          
-          <button onClick={() => { onSobreGabyClick?.(); setIsMenuOpen(false); }} className="block text-base py-2 w-full text-left">
-            Sobre Gaby
-          </button>
-          
-          {!user && (
-            <Link to="/auth" className="block text-base text-primary py-2" onClick={() => setIsMenuOpen(false)}>
-              Iniciar sesión
-            </Link>
-          )}
-        </nav>
-      )}
     </header>
   );
 };
