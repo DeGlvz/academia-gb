@@ -43,7 +43,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
         </Link>
 
         {/* Desktop Navigation - alineado verticalmente */}
-        <div className="hidden md:flex items-center h-full">
+        <div className="hidden md:flex items-center">
           <nav className="flex items-center gap-4 lg:gap-6">
             <Link to="/" className="text-sm font-medium text-foreground/70 hover:text-primary transition-colors whitespace-nowrap">
               Inicio
