@@ -38,15 +38,14 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b">
       <div className="container px-4 mx-auto">
         <div className="flex items-center justify-between h-16">
-          {/* Logo - izquierda */}
+          {/* Logo - izquierda fija */}
           <Link to="/" className="flex items-center shrink-0">
             <img src={logo} alt="Gaby Bernal en tu Cocina" className="h-8 sm:h-10 object-contain max-w-[140px] sm:max-w-[180px]" />
           </Link>
 
-          {/* Desktop Navigation - CENTRADO con flex-1 y justify-center */}
+          {/* Desktop Navigation - centro expandible */}
           <div className="hidden md:flex flex-1 items-center justify-center">
             <div className="flex items-center gap-0 lg:gap-1">
-              {/* Inicio */}
               <Link 
                 to="/" 
                 className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50 whitespace-nowrap"
@@ -54,7 +53,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                 Inicio
               </Link>
 
-              {/* Clases - Dropdown */}
               <NavigationMenu>
                 <NavigationMenuList>
                   <NavigationMenuItem>
@@ -109,7 +107,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                 </NavigationMenuList>
               </NavigationMenu>
 
-              {/* Herramientas - Dropdown */}
               <NavigationMenu>
                 <NavigationMenuList>
                   <NavigationMenuItem>
@@ -131,7 +128,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                 </NavigationMenuList>
               </NavigationMenu>
 
-              {/* Tienda */}
               <Link 
                 to="/tienda" 
                 className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50 whitespace-nowrap"
@@ -139,7 +135,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
                 Tienda
               </Link>
 
-              {/* Sobre Gaby - botón modal */}
               <button
                 onClick={onSobreGabyClick}
                 className="px-3 py-2 text-sm font-medium text-foreground/70 hover:text-primary transition-colors rounded-md hover:bg-muted/50 whitespace-nowrap"
@@ -149,7 +144,7 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
             </div>
           </div>
 
-          {/* Right side - Search + Cart + Auth */}
+          {/* Right side - fijo a la derecha */}
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button
               variant="ghost"
@@ -209,7 +204,6 @@ const Header = ({ onSearchClick, onSobreGabyClick }: HeaderProps) => {
               </Button>
             )}
 
-            {/* Mobile menu button */}
             <Button 
               variant="ghost" 
               size="icon" 
